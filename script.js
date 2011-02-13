@@ -1,5 +1,5 @@
 (function() {
-  var ball, board, box_h, chip_w, gyro, i, initial, j, log_acceleration, prev_a, setup, turn, waiting;
+  var ball, board, box_h, chip_w, gyro, initial, log_acceleration, new_matrix, prev_a, setup, turn, waiting;
   initial = false;
   prev_a = false;
   waiting = true;
@@ -7,22 +7,38 @@
   turn = 0;
   chip_w = 0;
   box_h = 0;
-  board = {
-    matrix: (function() {
-      var _results;
-      _results = [];
-      for (j = 0; j <= 6; j++) {
-        _results.push((function() {
-          var _results;
-          _results = [];
-          for (i = 0; i <= 5; i++) {
-            _results.push(null);
-          }
-          return _results;
-        })());
+  Array.prototype.real_len = function() {
+    var i, n, _ref;
+    if (!this.length) {
+      return 0;
+    } else {
+      n = 0;
+      for (i = 0, _ref = this.length - 1; (0 <= _ref ? i <= _ref : i >= _ref); (0 <= _ref ? i += 1 : i -= 1)) {
+        if (typeof this[i] === 'number') {
+          n += 1;
+        }
       }
-      return _results;
-    })(),
+      return n;
+    }
+  };
+  new_matrix = function() {
+    var i, j, _results;
+    _results = [];
+    for (j = 0; j <= 6; j++) {
+      _results.push((function() {
+        var _results;
+        _results = [];
+        for (i = 0; i <= 5; i++) {
+          _results.push(null);
+        }
+        return _results;
+      })());
+    }
+    return _results;
+  };
+  board = {
+    matrix: new_matrix(),
+    turns: 0,
     place: function(col) {
       var added, dist, i, x_offset, _ref;
       added = false;
@@ -49,9 +65,57 @@
       return $('#c' + (ball.col() + 1)).addClass('highlight');
     },
     new_turn: function() {
-      turn = Math.abs(turn - 1);
+      this.turns += 1;
+      turn = this.turns % 2 + 1;
       console.log(turn);
-      return $('#chip').toggleClass('blue');
+      $('#chip').toggleClass('blue');
+      return this.check_win();
+    },
+    check_win: function() {
+      var i, item, item_str, j, row, to_check, _i, _len;
+      if (this.turns === 43) {
+        if (confirm('Game ended in a draw. New game?')) {
+          this.new_game();
+        }
+      }
+      if (this.turns > 7) {
+        to_check = [];
+        for (j = 0; j <= 6; j++) {
+          if (this.matrix[j].real_len() > 3) {
+            to_check.push(this.matrix[j]);
+          }
+        }
+        for (i = 0; i <= 5; i++) {
+          row = (function() {
+            var _results;
+            _results = [];
+            for (j = 0; j <= 6; j++) {
+              _results.push(this.matrix[j][i]);
+            }
+            return _results;
+          }).call(this);
+          console.log(row);
+          if (row.real_len() > 3) {
+            to_check.push(row);
+          }
+        }
+        console.log(to_check);
+        for (_i = 0, _len = to_check.length; _i < _len; _i++) {
+          item = to_check[_i];
+          item_str = item.join('');
+          if (/1{4,}/.test(item_str)) {
+            return alert('Player 1 wins.');
+          }
+          if (/2{4,}/.test(item_str)) {
+            return alert('Player 2 wins.');
+          }
+        }
+      }
+    },
+    new_game: function() {
+      this.turns = 0;
+      $('#bag').html('');
+      return this.matrix = new_matrix();
     }
   };
   ball = {
@@ -88,10 +152,10 @@
         y = 0;
       }
       color = '';
-      if (turn === 1) {
+      if (turn === 2) {
         color = 'blue';
       }
-      $('#box').append('<div class="chip ' + color + '"></div>');
+      $('#bag').append('<div class="chip ' + color + '"></div>');
       return $('.chip').last().css('-webkit-transform', 'translate(' + this.xtrans + 'px, ' + y + 'px)');
     }
   };

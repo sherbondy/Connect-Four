@@ -2,13 +2,27 @@ initial = false     # initial orientation value
 prev_a = false      # previous acceleration value
 waiting = true      # waiting for a bump
 gyro = false        # whether or not gyroscope is enabled
-turn = 0            # whose turn it is
+turn = 0            # whose turn it is, either player 1 or 2
 chip_w = 0          # chip width, set in document ready
 box_h = 0           # height of the bounding box
 
+
+Array::real_len = ->
+    if not this.length
+        0
+    else
+        n = 0
+        (n += 1 for i in [0..this.length-1] when typeof this[i] is 'number')
+        n
+
+new_matrix = ->
+    ((null for i in [0..5]) for j in [0..6])
+    
 board =
     # create a 7x6 matrix
-    matrix: ((null for i in [0..5]) for j in [0..6])
+    
+    matrix: new_matrix()
+    turns: 0
     place: (col) -> 
         added = false
         dist = box_h
@@ -33,9 +47,47 @@ board =
         $('#c'+(ball.col()+1)).addClass('highlight')
         
     new_turn: ->
-        turn = Math.abs(turn-1)
-        console.log(turn)
+        this.turns += 1
+        turn = this.turns % 2 + 1
+        console.log turn
         $('#chip').toggleClass('blue')
+        this.check_win()
+    
+    check_win: ->
+        if this.turns is 43
+            if confirm 'Game ended in a draw. New game?'
+                this.new_game()
+        if this.turns > 7
+            # list of lists to evaluate for 4 in a row
+            to_check = []
+            
+            for j in [0..6]
+                # get rid of entries that can't possibly have winners                    
+                if this.matrix[j].real_len() > 3
+                    # columns
+                    to_check.push(this.matrix[j])
+            
+            for i in [0..5]
+                row = (this.matrix[j][i] for j in [0..6])
+                console.log(row)
+                if row.real_len() > 3
+                    to_check.push(row)
+                    
+            # still need to check diagonals
+                    
+            console.log to_check
+            for item in to_check
+                item_str = item.join('')
+                return alert 'Player 1 wins.' if /1{4,}/.test(item_str)
+                return alert 'Player 2 wins.' if /2{4,}/.test(item_str)
+                
+            
+    
+    new_game: ->
+        this.turns = 0
+        $('#bag').html('')
+        this.matrix = new_matrix()
+            
 
 ball =
     xtrans: 0
@@ -65,8 +117,8 @@ ball =
     
     drop: (y=0) ->
         color = ''
-        color = 'blue' if turn is 1
-        $('#box').append('<div class="chip '+color+'"></div>')
+        color = 'blue' if turn is 2
+        $('#bag').append('<div class="chip '+color+'"></div>')
                         
         $('.chip').last().css(
             '-webkit-transform', 'translate('+this.xtrans+'px, '+y+'px)')
@@ -107,11 +159,13 @@ log_acceleration = (m) ->
             
     # save previous list of acceleration values
     prev = as
-    
+
+# initialize variables, bind event listeners
 setup = ->
     chip_w = $('#chip').width()
     box_h = $('#box').height()
     
+    # for testing on my computer
     $(window).bind 'keyup', (e) ->
         switch e.keyCode
             when 32 then board.place(ball.col())
@@ -119,6 +173,7 @@ setup = ->
                 ball.move(-44)
             when 39
                 ball.move(44)
+                
     $('body').bind 'touchmove touchend', (e) ->
         e.preventDefault()
         switch e.type
