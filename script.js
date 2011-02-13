@@ -1,11 +1,12 @@
 (function() {
-  var ball, board, chip_w, drop, gyro, i, initial, j, log_acceleration, prev_a, setup, turn, waiting;
+  var ball, board, box_h, chip_w, gyro, i, initial, j, log_acceleration, prev_a, setup, turn, waiting;
   initial = false;
   prev_a = false;
   waiting = true;
   gyro = false;
   turn = 0;
   chip_w = 0;
+  box_h = 0;
   board = {
     matrix: (function() {
       var _results;
@@ -23,17 +24,13 @@
       return _results;
     })(),
     place: function(col) {
-      var added, dist, i, num, x_offset, _ref;
+      var added, dist, i, x_offset, _ref;
       added = false;
-      dist = $('#box').height();
+      dist = box_h;
       this.matrix[col].reverse();
       for (i = 0, _ref = this.matrix[col].length - 1; (0 <= _ref ? i <= _ref : i >= _ref); (0 <= _ref ? i += 1 : i -= 1)) {
         if (!added && this.matrix[col][i] === null) {
-          num = 0;
-          if ($('#chip').hasClass('blue')) {
-            num = 1;
-          }
-          this.matrix[col][i] = num;
+          this.matrix[col][i] = turn;
           dist -= chip_w * (i + 1);
           added = true;
         }
@@ -42,9 +39,8 @@
       if (added) {
         x_offset = col * chip_w - $('#chip').offset().left + 6;
         ball.xtrans += x_offset;
-        console.log(x_offset);
         ball.drop(dist);
-        ball.reset();
+        this.highlight();
         return this.new_turn();
       }
     },
@@ -54,12 +50,8 @@
     },
     new_turn: function() {
       turn = Math.abs(turn - 1);
-      if (turn === 1) {
-        $('#chip').addClass('blue');
-      }
-      if (turn === 0) {
-        return $('#chip').addClass('red');
-      }
+      console.log(turn);
+      return $('#chip').toggleClass('blue');
     }
   };
   ball = {
@@ -67,13 +59,9 @@
     col: function() {
       return parseInt($('#chip').offset().left / chip_w);
     },
-    reset: function() {
-      $('#chip').removeClass('first');
-      return board.highlight();
-    },
     proper_x: function(x) {
       var max_xtrans, x_sum;
-      max_xtrans = $('#box').width() - chip_w / 2;
+      max_xtrans = ($('#box').width() - chip_w) / 2;
       x_sum = x;
       if (!gyro) {
         x_sum += this.xtrans;
@@ -95,10 +83,15 @@
       return board.highlight();
     },
     drop: function(y) {
+      var color;
       if (y == null) {
         y = 0;
       }
-      $('#box').append('<div class="chip"></div>');
+      color = '';
+      if (turn === 1) {
+        color = 'blue';
+      }
+      $('#box').append('<div class="chip ' + color + '"></div>');
       return $('.chip').last().css('-webkit-transform', 'translate(' + this.xtrans + 'px, ' + y + 'px)');
     }
   };
@@ -125,29 +118,29 @@
     }
     return prev = as;
   };
-  drop = function() {
-    board.place(ball.col());
-    console.log(board.matrix);
-    return false;
-  };
   setup = function() {
     chip_w = $('#chip').width();
-    $('#box').doubleTap(drop);
+    box_h = $('#box').height();
     $(window).bind('keyup', function(e) {
       switch (e.keyCode) {
         case 32:
-          return drop();
+          return board.place(ball.col());
         case 37:
           return ball.move(-44);
         case 39:
           return ball.move(44);
       }
     });
-    $('body').bind('touchmove', function(e) {
+    $('body').bind('touchmove touchend', function(e) {
       var curr_x;
       e.preventDefault();
-      curr_x = e.targetTouches[0].pageX - $('#chip').offset().left - chip_w / 2;
-      return ball.move(curr_x);
+      switch (e.type) {
+        case 'touchmove':
+          curr_x = e.targetTouches[0].pageX - $('#chip').offset().left - chip_w / 2;
+          return ball.move(curr_x);
+        case 'touchend':
+          return board.place(ball.col());
+      }
     });
     $('body').bind('touchmove touchstart', function(e) {
       return e.preventDefault();

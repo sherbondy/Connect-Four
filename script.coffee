@@ -4,20 +4,18 @@ waiting = true      # waiting for a bump
 gyro = false        # whether or not gyroscope is enabled
 turn = 0            # whose turn it is
 chip_w = 0          # chip width, set in document ready
+box_h = 0           # height of the bounding box
 
 board =
     # create a 7x6 matrix
     matrix: ((null for i in [0..5]) for j in [0..6])
     place: (col) -> 
         added = false
-        dist = $('#box').height()
+        dist = box_h
         this.matrix[col].reverse()
         for i in [0.. this.matrix[col].length - 1]
             if not added and this.matrix[col][i] is null
-                num = 0
-                if $('#chip').hasClass('blue')
-                    num = 1
-                this.matrix[col][i] = num
+                this.matrix[col][i] = turn
                 dist -= chip_w*(i+1) 
                 added = true
         
@@ -26,27 +24,25 @@ board =
         if added
             x_offset = col*chip_w - $('#chip').offset().left + 6
             ball.xtrans += x_offset
-            console.log x_offset
             ball.drop(dist)
-            ball.reset()
+            this.highlight()
             this.new_turn()
+            
     highlight: -> 
         $('#cols li').removeClass('highlight')
         $('#c'+(ball.col()+1)).addClass('highlight')
+        
     new_turn: ->
         turn = Math.abs(turn-1)
-        $('#chip').addClass('blue') if turn is 1
-        $('#chip').addClass('red') if turn is 0
+        console.log(turn)
+        $('#chip').toggleClass('blue')
 
 ball =
     xtrans: 0
     col: -> parseInt $('#chip').offset().left / chip_w
-    reset: -> 
-        $('#chip').removeClass 'first'
-        board.highlight()
     
     proper_x: (x) ->
-        max_xtrans = $('#box').width() - chip_w/2
+        max_xtrans = ($('#box').width() - chip_w)/2
 
         x_sum  = x
         # not using gyroscope, want to sum translations
@@ -68,7 +64,9 @@ ball =
         board.highlight()
     
     drop: (y=0) ->
-        $('#box').append('<div class="chip"></div>')
+        color = ''
+        color = 'blue' if turn is 1
+        $('#box').append('<div class="chip '+color+'"></div>')
                         
         $('.chip').last().css(
             '-webkit-transform', 'translate('+this.xtrans+'px, '+y+'px)')
@@ -109,27 +107,26 @@ log_acceleration = (m) ->
             
     # save previous list of acceleration values
     prev = as
-
-drop = ->
-    board.place(ball.col())
-    console.log(board.matrix)
-    false
     
 setup = ->
     chip_w = $('#chip').width()
+    box_h = $('#box').height()
     
-    $('#box').doubleTap drop
     $(window).bind 'keyup', (e) ->
         switch e.keyCode
-            when 32 then drop()
+            when 32 then board.place(ball.col())
             when 37
                 ball.move(-44)
             when 39
                 ball.move(44)
-    $('body').bind 'touchmove', (e) ->
+    $('body').bind 'touchmove touchend', (e) ->
         e.preventDefault()
-        curr_x = e.targetTouches[0].pageX - $('#chip').offset().left - chip_w/2
-        ball.move(curr_x)
+        switch e.type
+            when 'touchmove'
+                curr_x = e.targetTouches[0].pageX - $('#chip').offset().left - chip_w/2
+                ball.move(curr_x)
+            when 'touchend'
+                board.place(ball.col())
     
     $('body').bind 'touchmove touchstart', (e) ->
         e.preventDefault()
