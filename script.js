@@ -1,9 +1,11 @@
 (function() {
-  var ball, board, drop, gyro, i, initial, j, log_acceleration, prev, setup, waiting;
+  var ball, board, chip_w, drop, gyro, i, initial, j, log_acceleration, prev_a, setup, turn, waiting;
   initial = false;
-  prev = false;
+  prev_a = false;
   waiting = true;
   gyro = false;
+  turn = 0;
+  chip_w = 0;
   board = {
     matrix: (function() {
       var _results;
@@ -21,42 +23,57 @@
       return _results;
     })(),
     place: function(col) {
-      var added, dist, i, _ref;
+      var added, dist, i, num, x_offset, _ref;
       added = false;
       dist = $('#box').height();
       this.matrix[col].reverse();
       for (i = 0, _ref = this.matrix[col].length - 1; (0 <= _ref ? i <= _ref : i >= _ref); (0 <= _ref ? i += 1 : i -= 1)) {
-        if (!added && !this.matrix[col][i]) {
-          this.matrix[col][i] = 1;
-          dist -= $('.chip').height() * (i + 1);
+        if (!added && this.matrix[col][i] === null) {
+          num = 0;
+          if ($('#chip').hasClass('blue')) {
+            num = 1;
+          }
+          this.matrix[col][i] = num;
+          dist -= chip_w * (i + 1);
           added = true;
         }
       }
       this.matrix[col].reverse();
       if (added) {
-        ball.move(0, dist);
-        return ball.reset();
+        x_offset = col * chip_w - $('#chip').offset().left + 6;
+        ball.xtrans += x_offset;
+        console.log(x_offset);
+        ball.drop(dist);
+        ball.reset();
+        return this.new_turn();
       }
     },
     highlight: function() {
       $('#cols li').removeClass('highlight');
       return $('#c' + (ball.col() + 1)).addClass('highlight');
+    },
+    new_turn: function() {
+      turn = Math.abs(turn - 1);
+      if (turn === 1) {
+        $('#chip').addClass('blue');
+      }
+      if (turn === 0) {
+        return $('#chip').addClass('red');
+      }
     }
   };
   ball = {
     xtrans: 0,
-    ytrans: 0,
     col: function() {
-      return parseInt($('.chip').first().offset().left / $('.chip').first().width());
+      return parseInt($('#chip').offset().left / chip_w);
     },
     reset: function() {
-      this.xtrans = this.ytrans = 0;
-      $('#box').prepend('<div class="chip"></div>');
+      $('#chip').removeClass('first');
       return board.highlight();
     },
     proper_x: function(x) {
       var max_xtrans, x_sum;
-      max_xtrans = ($('#box').width() - $('.chip').first().width()) / 2;
+      max_xtrans = $('#box').width() - chip_w / 2;
       x_sum = x;
       if (!gyro) {
         x_sum += this.xtrans;
@@ -69,24 +86,25 @@
         return x_sum;
       }
     },
-    move: function(x, y) {
-      var max_ytrans;
+    move: function(x) {
       if (x == null) {
         x = 0;
       }
+      this.xtrans = this.proper_x(x);
+      $('#chip').css('-webkit-transform', 'translateX(' + this.xtrans + 'px)');
+      return board.highlight();
+    },
+    drop: function(y) {
       if (y == null) {
         y = 0;
       }
-      this.xtrans = this.proper_x(x);
-      max_ytrans = $('#box').height() - $('.chip').first().height();
-      this.ytrans = Math.min(y + this.ytrans, max_ytrans);
-      $('.chip').first().css('-webkit-transform', 'translate(' + this.xtrans + 'px, ' + this.ytrans + 'px)');
-      return board.highlight();
+      $('#box').append('<div class="chip"></div>');
+      return $('.chip').last().css('-webkit-transform', 'translate(' + this.xtrans + 'px, ' + y + 'px)');
     }
   };
   'log_orientation = (o) ->\n    # indicate the gyroscope is in use\n    gyro = true\n    \n    x = parseInt o.alpha\n    # set the original alpha position of player in space\n    initial = x if not initial\n    # amount to x-translate the chip from middle of board\n    trans = 5*(initial-x)\n    \n    $(\'#initial\').text initial\n    \n    ball.move(trans)';
   log_acceleration = function(m) {
-    var a, a_changed, as, diffs, i, max_diff;
+    var a, a_changed, as, diffs, i, max_diff, prev;
     a = m.acceleration;
     as = [a.x, a.y, a.z];
     if (prev) {
@@ -113,6 +131,7 @@
     return false;
   };
   setup = function() {
+    chip_w = $('#chip').width();
     $('#box').doubleTap(drop);
     $(window).bind('keyup', function(e) {
       switch (e.keyCode) {
@@ -124,21 +143,16 @@
           return ball.move(44);
       }
     });
-    $('.chip').bind('touchmove', function(e) {
-      var curX;
+    $('body').bind('touchmove', function(e) {
+      var curr_x;
       e.preventDefault();
-      curX = e.targetTouches[0].pageX - startX;
-      $('#pos').text(currX);
-      return e.targetTouches[0].target.style.webkitTransform = 'translate(' + curX + 'px)';
+      curr_x = e.targetTouches[0].pageX - $('#chip').offset().left - chip_w / 2;
+      return ball.move(curr_x);
     });
-    $('#cols').swipeLeft(function() {
-      ball.move(-44);
-      return false;
+    $('body').bind('touchmove touchstart', function(e) {
+      return e.preventDefault();
     });
-    $('#cols').swipeRight(function() {
-      ball.move(44);
-      return false;
-    });
+    board.new_turn();
     ball.move();
     if (waiting) {
       return window.addEventListener('devicemotion', log_acceleration, false);

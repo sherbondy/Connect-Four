@@ -4,6 +4,7 @@
   line-height: 1;
   font-size: 100%;
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  -khtml-user-select: none;
 }
 body {
   width: 100%;
@@ -13,7 +14,7 @@ body {
   margin: 0 6px;
   height: 316px;
 }
-.chip {
+#chip, .chip {
   position: absolute;
   width: 44px;
   height: 44px;
@@ -22,6 +23,9 @@ body {
   background-color: #ff0000;
   border-radius: 32px;
   -webkit-box-shadow: inset 0px 0px 32px #000;
+}
+#chip.blue, .chip.blue {
+  background-color: #0000ff;
 }
 #cols {
   overflow: hidden;

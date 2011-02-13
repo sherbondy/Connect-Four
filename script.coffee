@@ -1,7 +1,9 @@
-initial = false
-prev = false
-waiting = true # waiting for a bump
-gyro = false
+initial = false     # initial orientation value
+prev_a = false      # previous acceleration value
+waiting = true      # waiting for a bump
+gyro = false        # whether or not gyroscope is enabled
+turn = 0            # whose turn it is
+chip_w = 0          # chip width, set in document ready
 
 board =
     # create a 7x6 matrix
@@ -11,35 +13,46 @@ board =
         dist = $('#box').height()
         this.matrix[col].reverse()
         for i in [0.. this.matrix[col].length - 1]
-            if not added and not this.matrix[col][i]
-                this.matrix[col][i] = 1
-                dist -= $('.chip').height()*(i+1) 
+            if not added and this.matrix[col][i] is null
+                num = 0
+                if $('#chip').hasClass('blue')
+                    num = 1
+                this.matrix[col][i] = num
+                dist -= chip_w*(i+1) 
                 added = true
         
         this.matrix[col].reverse()
+        # only create a new ball if there was actually space to add
         if added
-            ball.move(0, dist)
+            x_offset = col*chip_w - $('#chip').offset().left + 6
+            ball.xtrans += x_offset
+            console.log x_offset
+            ball.drop(dist)
             ball.reset()
+            this.new_turn()
     highlight: -> 
         $('#cols li').removeClass('highlight')
         $('#c'+(ball.col()+1)).addClass('highlight')
+    new_turn: ->
+        turn = Math.abs(turn-1)
+        $('#chip').addClass('blue') if turn is 1
+        $('#chip').addClass('red') if turn is 0
 
 ball =
     xtrans: 0
-    ytrans: 0
-    col: -> parseInt $('.chip').first().offset().left / $('.chip').first().width()
+    col: -> parseInt $('#chip').offset().left / chip_w
     reset: -> 
-        this.xtrans = this.ytrans = 0
-        $('#box').prepend('<div class="chip"></div>')
+        $('#chip').removeClass 'first'
         board.highlight()
+    
     proper_x: (x) ->
-        max_xtrans = ($('#box').width() - $('.chip').first().width())/2
-        
+        max_xtrans = $('#box').width() - chip_w/2
+
         x_sum  = x
         # not using gyroscope, want to sum translations
         if not gyro
             x_sum += this.xtrans
-            
+
         if x_sum < -max_xtrans
             -max_xtrans
         else if x_sum > max_xtrans
@@ -47,16 +60,19 @@ ball =
         else
             x_sum
             
-    move: (x=0, y=0) ->        
+    move: (x=0) ->
         this.xtrans = this.proper_x(x)
-        
-        max_ytrans = $('#box').height() - $('.chip').first().height()
-        this.ytrans = Math.min(y+this.ytrans, max_ytrans)
-                
-        $('.chip').first().css(
-            '-webkit-transform', 'translate('+this.xtrans+'px, '+this.ytrans+'px)')
+        $('#chip').css(
+            '-webkit-transform', 'translateX('+this.xtrans+'px)')
         
         board.highlight()
+    
+    drop: (y=0) ->
+        $('#box').append('<div class="chip"></div>')
+                        
+        $('.chip').last().css(
+            '-webkit-transform', 'translate('+this.xtrans+'px, '+y+'px)')
+        
         
 '''
 log_orientation = (o) ->
@@ -100,6 +116,8 @@ drop = ->
     false
     
 setup = ->
+    chip_w = $('#chip').width()
+    
     $('#box').doubleTap drop
     $(window).bind 'keyup', (e) ->
         switch e.keyCode
@@ -108,19 +126,15 @@ setup = ->
                 ball.move(-44)
             when 39
                 ball.move(44)
-    $('.chip').bind 'touchmove', (e) ->
-        e.preventDefault();
-        curX = e.targetTouches[0].pageX - startX
-        $('#pos').text(currX)
-        e.targetTouches[0].target.style.webkitTransform = 'translate(' + curX + 'px)'
-        
-    $('#cols').swipeLeft -> 
-        ball.move(-44)
-        false
-    $('#cols').swipeRight -> 
-        ball.move(44)
-        false
+    $('body').bind 'touchmove', (e) ->
+        e.preventDefault()
+        curr_x = e.targetTouches[0].pageX - $('#chip').offset().left - chip_w/2
+        ball.move(curr_x)
     
+    $('body').bind 'touchmove touchstart', (e) ->
+        e.preventDefault()
+    
+    board.new_turn()
     ball.move()
 
     # window.addEventListener 'deviceorientation', log_orientation, false;
