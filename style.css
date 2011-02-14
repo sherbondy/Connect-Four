@@ -30,6 +30,55 @@ body {
 .ball.black {
   background-image: url('img/bump4pieceBlackNew.png');
 }
+#black_arrow, #red_arrow {
+  position: absolute;
+  display: none;
+  top: 29px;
+}
+#black_arrow {
+  left: 0px;
+}
+#red_arrow {
+  left: 301px;
+}
+#black_move, #red_move {
+  position: absolute;
+  width: 56px;
+  height: 57px;
+  top: 9px;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
+#black_move {
+  left: 11px;
+  background-image: url('img/bump4_whosemove_black.png');
+}
+#black_move.glow {
+  background-image: url('img/bump4_whosemove_black_glow.png');
+}
+#red_move {
+  left: 252px;
+  background-image: url('img/bump4_whosemove_red.png');
+}
+#red_move.glow {
+  background-image: url('img/bump4_whosemove_red_glow.png');
+}
+#black_text, #red_text {
+  position: absolute;
+  top: 16px;
+  width: 91px;
+  height: 48px;
+  line-height: 1.5;
+  font-weight: bold;
+  font-size: 14px;
+}
+#black_text {
+  left: 64px;
+}
+#red_text {
+  left: 164px;
+  text-align: right;
+}
 #cols {
   overflow: hidden;
   width: 315px;

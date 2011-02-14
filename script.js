@@ -1,5 +1,5 @@
 (function() {
-  var ball, board, log_acceleration, prev, prev_a, setup, waiting;
+  var ball, board, log_acceleration, pause_audio, prev, prev_a, setup, waiting;
   prev_a = false;
   waiting = true;
   prev = 0;
@@ -17,10 +17,22 @@
       return n;
     }
   };
+  pause_audio = function() {
+    var item, _i, _len, _ref, _results;
+    _ref = document.getElementsByTagName('audio');
+    _results = [];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      item = _ref[_i];
+      item.pause();
+      _results.push(true);
+    }
+    return _results;
+  };
   board = {
     h: 325,
     matrix: [],
     turn: 0,
+    turn_text: [null, 'red', 'black'],
     turns: 0,
     new_matrix: function() {
       var i, j, _results;
@@ -38,7 +50,11 @@
       return _results;
     },
     place: function() {
-      var added, col, dist, i, _ref;
+      var added, col, dist, i, row, _ref;
+      $(window).unbind();
+      $('#cols').unbind();
+      $('#cols li').unbind();
+      row = 0;
       col = ball.col;
       added = false;
       dist = this.h;
@@ -48,22 +64,66 @@
           this.matrix[col][i] = this.turn;
           dist -= ball.w * (i + 1) + (this.matrix[col].real_len() - 5);
           added = true;
+          row = i;
+          break;
         }
       }
       this.matrix[col].reverse();
       if (added) {
-        return ball.drop(dist);
+        if (pause_audio()) {
+          document.getElementById('a' + row).play();
+        }
+        ball.drop(dist);
       }
+      return {
+        "else": this.rebind()
+      };
     },
     highlight_col: function(x) {
       ball.col = parseInt(x / ball.w);
       $('#cols li').removeClass('highlight');
       return $('#c' + ball.col).addClass('highlight');
     },
+    rebind: function() {
+      $(window).bind('keyup', function(e) {
+        switch (e.keyCode) {
+          case 32:
+            return board.place();
+          case 37:
+            return ball.move(-1);
+          case 39:
+            return ball.move(1);
+        }
+      });
+      $('#cols').bind('touchmove touchend', function(e) {
+        switch (e.type) {
+          case 'touchmove':
+            e.preventDefault();
+            return board.highlight_col(e.targetTouches[0].pageX);
+          case 'touchend':
+            return board.place();
+        }
+      });
+      return $('#cols li').bind('touchstart', function(e) {
+        var x;
+        e.preventDefault();
+        x = $(this).offset().left;
+        return board.highlight_col(x);
+      });
+    },
     new_turn: function() {
+      var color;
+      setTimeout(board.rebind(), 1000);
       $('#cols li').removeClass('highlight');
       this.turn = (this.turns % 2) + 1;
       this.turns += 1;
+      color = this.turn_text[this.turn];
+      $('#black_arrow, #red_arrow').hide();
+      $('#' + color + '_arrow').show();
+      $('#black_move, #red_move').removeClass('glow');
+      $('#' + color + '_move').addClass('glow');
+      $('#black_text, #red_text').text('');
+      $('#' + color + '_text').text(color + ' player\'s turn.');
       return this.check_win();
     },
     check_win: function() {
@@ -131,17 +191,22 @@
         }
       }
       if (winner) {
-        if (confirm('' + winner + ' wins! Play again?')) {
-          return this.new_game();
-        } else {
-          return this.new_game();
+        if (pause_audio()) {
+          document.getElementById('a_win').play();
+          if (confirm('' + winner + ' wins! Play again?')) {
+            return setTimeout(this.new_game(), 1000);
+          } else {
+            if (pause_audio()) {
+              document.getElementById('a_quit').play();
+              return this.new_game();
+            }
+          }
         }
       }
     },
     new_game: function() {
       this.matrix = this.new_matrix();
       this.turns = 0;
-      ball.col = 3;
       $('#cols li').html('');
       return this.new_turn();
     }
@@ -201,35 +266,22 @@
     return prev = as;
   };
   setup = function() {
-    $(window).bind('keyup', function(e) {
-      switch (e.keyCode) {
-        case 32:
-          return board.place();
-        case 37:
-          return ball.move(-1);
-        case 39:
-          return ball.move(1);
-      }
-    });
-    $('#cols').bind('touchmove touchend', function(e) {
-      e.preventDefault();
-      switch (e.type) {
-        case 'touchmove':
-          return board.highlight_col(e.targetTouches[0].pageX);
-        case 'touchend':
-          return board.place();
-      }
-    });
-    $('#cols li').bind('touchstart', function(e) {
-      var x;
-      e.preventDefault();
-      x = $(this).offset().left;
-      return board.highlight_col(x);
-    });
+    var hide_address_bar, i;
     $('body').bind('touchmove touchstart', function(e) {
       return e.preventDefault();
     });
     board.new_game();
+    for (i = 0; i <= 5; i++) {
+      document.getElementById('a' + i).load();
+    }
+    document.getElementById('a_quit').load();
+    document.getElementById('a_win').load();
+    hide_address_bar = function() {
+      window.scrollTo(0, 1);
+      return true;
+    };
+    hide_address_bar();
+    setInterval(hide_address_bar, 2000);
     if (waiting) {
       return window.addEventListener('devicemotion', log_acceleration, false);
     }

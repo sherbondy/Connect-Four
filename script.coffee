@@ -10,45 +10,96 @@ Array::real_len = ->
         n = 0
         (n += 1 for i in [0..this.length-1] when this[i] isnt 0)
         n
+
+pause_audio = ->
+    for item in document.getElementsByTagName('audio')
+        item.pause()
+        true
     
 board =
     # create a 7x6 matrix
     
     h: 325 # board height
     matrix: []
-    turn: 0 # player turn, either 1 or 2
+    turn: 0 # player turn, either 1 (red) or 2 (blue)
+    turn_text: [null, 'red', 'black']
     turns: 0 # total number of turns in the game
     
     new_matrix: ->
         (0 for i in [0..5] for j in [0..6])
         
-    place: -> 
+    place: ->
+        # unbind the event listeners to avoid excessive plays
+        $(window).unbind()
+        $('#cols').unbind()
+        $('#cols li').unbind()
+        
+        row = 0
         col = ball.col
         added = false
         dist = this.h
+        
         this.matrix[col].reverse()
         for i in [0.. this.matrix[col].length - 1]
             if not added and this.matrix[col][i] is 0
                 this.matrix[col][i] = this.turn
                 dist -= ball.w*(i+1) + (this.matrix[col].real_len()-5)
                 added = true
+                row = i
+                break
         
         this.matrix[col].reverse()
         # only create a new ball if there was actually space to add
         if added
+            if pause_audio()
+                document.getElementById('a'+row).play()
             ball.drop(dist)
+        else:
+            this.rebind()
             
     highlight_col: (x) ->
         ball.col = parseInt (x) / ball.w
         
         $('#cols li').removeClass('highlight')
         $('#c'+ball.col).addClass('highlight')
-        
+    
+    rebind: ->
+        # for testing on my computer
+        $(window).bind 'keyup', (e) ->
+            switch e.keyCode
+                when 32 then board.place()
+                when 37 then ball.move(-1)
+                when 39 then ball.move(1)
+                
+        $('#cols').bind 'touchmove touchend', (e) ->
+            switch(e.type)
+                when 'touchmove'
+                    e.preventDefault()
+                    board.highlight_col e.targetTouches[0].pageX
+                when 'touchend' then board.place()
+
+        $('#cols li').bind 'touchstart', (e) ->
+            e.preventDefault()
+            x = $(this).offset().left
+            board.highlight_col(x)
+    
     new_turn: ->
+        setTimeout(board.rebind(), 1000)
+            
         $('#cols li').removeClass('highlight')
-        
+                
         this.turn = (this.turns % 2) + 1
         this.turns += 1
+        
+        color = this.turn_text[this.turn]
+        
+        $('#black_arrow, #red_arrow').hide()
+        $('#'+color+'_arrow').show()
+        
+        $('#black_move, #red_move').removeClass('glow')
+        $('#'+color+'_move').addClass('glow')
+        $('#black_text, #red_text').text('')
+        $('#'+color+'_text').text(color+' player\'s turn.')
         this.check_win()
     
     check_win: ->
@@ -104,17 +155,20 @@ board =
                     winner = 'Black'
                     break
             
-        if winner
-            if confirm ''+winner+' wins! Play again?'
-                this.new_game()
-            else
-                this.new_game()
+        if winner            
+            if pause_audio()
+                document.getElementById('a_win').play()
+                if confirm ''+winner+' wins! Play again?'
+                    setTimeout(this.new_game(), 1000)
+                else
+                    if pause_audio()
+                        document.getElementById('a_quit').play()
+                        this.new_game()
             
 
     new_game: ->
         this.matrix = this.new_matrix()
         this.turns = 0
-        ball.col = 3
         $('#cols li').html('')
 
         this.new_turn()
@@ -134,7 +188,7 @@ ball =
         this.col = total
         board.highlight_col(this.col*ball.w)
     
-    drop: (y=0) ->
+    drop: (y=0) ->        
         color = ''
         color = ' black' if board.turn is 2
         b_id = 'b'+board.turns
@@ -169,35 +223,29 @@ log_acceleration = (m) ->
     # save previous list of acceleration values
     prev = as
 
-# initialize variables, bind event listeners
+# initialize variables
 setup = ->    
-    # for testing on my computer
-    $(window).bind 'keyup', (e) ->
-        switch e.keyCode
-            when 32 then board.place()
-            when 37 then ball.move(-1)
-            when 39 then ball.move(1)
-                
-    $('#cols').bind 'touchmove touchend', (e) ->
-        e.preventDefault()
-        switch e.type
-            when 'touchmove'
-                board.highlight_col e.targetTouches[0].pageX
-            when 'touchend' then board.place()
-            
-    $('#cols li').bind 'touchstart', (e) ->
-        e.preventDefault()
-        x = $(this).offset().left
-        board.highlight_col(x)
-    
     $('body').bind 'touchmove touchstart', (e) ->
         e.preventDefault()
-    
+        
     board.new_game()
     
+    for i in [0..5]
+        document.getElementById('a'+i).load()
+    document.getElementById('a_quit').load()
+    document.getElementById('a_win').load()
+    
+    hide_address_bar = ->
+        window.scrollTo(0, 1)
+        true
+    
+    hide_address_bar()
+    
+    setInterval hide_address_bar, 2000
+        
     if waiting
         window.addEventListener 'devicemotion', 
                                 log_acceleration, 
-                                false;
+                                false
         
 $(document).ready(setup)
