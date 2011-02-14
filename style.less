@@ -9,43 +9,54 @@
 
 body {
     width: 100%;
+    background: #846b47 url('img/bump4bg.png') no-repeat;
 }
 
-#box {
-    width: 308px;
-    margin: 0 6px;
-    height: 316px;
+#top {
+    width: 320px;
+    height: 76px;
+    background: url('img/bump4_bg_top_skinny.png') repeat-x 0px -4px;
+    margin-bottom: 26px;
 }
 
 .ball {
+    -webkit-transition: all 0.5s ease-in;
     position: absolute;
-    width: 44px;
-    height: 44px;
-    left: 44*3+6px;
-    top: 20px;
-    background-color: #ff0000;
-    border-radius: 32px;
-    &.blue {
-        background-color: #0000ff;
+    z-index: -1;
+    width: 45px;
+    height: 45px;
+    top: 47px;
+    background-repeat: no-repeat;
+    background-position: 8px 9px;
+    background-image: url('img/bump4pieceRedNew.png');
+    &.black {
+        background-image: url('img/bump4pieceBlackNew.png');
     }
 }
 
 #cols {
     overflow: hidden;
-    margin-top: 72px;
+    width: 315px;
+    margin-left: 3px;
+    height: 325px;
+    background: url('img/bump4boardNew.png') no-repeat;
+    z-index: 2;
+    
     li {
         display: block;
         float: left;
-        width: 44px;
-        height: 44*6px;
-        background-color: #efefef;
+        width: 45px;
+        height: 45*6 + 10px;
+        background-color: none;
         
-        &.highlight, &:nth-child(odd).highlight {
-            background-color: #f8ffca;
+        &.highlight {
+            background-color: rgba(122, 128, 217, 0.2);
         }
-        
-        &:nth-child(odd) {
-            background-color: #ccc;
-        }
+    }
+    #c0 {
+        border-radius: 12px 0px 0px 12px;
+    }
+    #c6 {
+        border-radius: 0px 12px 12px 0px;
     }
 }
