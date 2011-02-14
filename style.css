@@ -14,7 +14,7 @@ body {
   margin: 0 6px;
   height: 316px;
 }
-#chip, .chip {
+.ball {
   position: absolute;
   width: 44px;
   height: 44px;
@@ -22,9 +22,8 @@ body {
   top: 20px;
   background-color: #ff0000;
   border-radius: 32px;
-  -webkit-box-shadow: inset 0px 0px 32px #000;
 }
-#chip.blue, .chip.blue {
+.ball.blue {
   background-color: #0000ff;
 }
 #cols {
