@@ -1,11 +1,9 @@
 (function() {
-  var ball, ball_w, board, box_h, gyro, initial, log_acceleration, new_matrix, prev_a, setup, turn, waiting;
+  var ball, board, box_h, gyro, initial, log_acceleration, prev_a, setup, waiting;
   initial = false;
   prev_a = false;
   waiting = true;
   gyro = false;
-  turn = 0;
-  ball_w = 0;
   box_h = 0;
   Array.prototype.real_len = function() {
     var i, n, _ref;
@@ -21,33 +19,35 @@
       return n;
     }
   };
-  new_matrix = function() {
-    var i, j, _results;
-    _results = [];
-    for (j = 0; j <= 6; j++) {
-      _results.push((function() {
-        var _results;
-        _results = [];
-        for (i = 0; i <= 5; i++) {
-          _results.push(0);
-        }
-        return _results;
-      })());
-    }
-    return _results;
-  };
   board = {
-    matrix: new_matrix(),
+    matrix: [],
+    turn: 0,
     turns: 0,
-    place: function(col) {
-      var added, dist, i, _ref;
+    new_matrix: function() {
+      var i, j, _results;
+      _results = [];
+      for (j = 0; j <= 6; j++) {
+        _results.push((function() {
+          var _results;
+          _results = [];
+          for (i = 0; i <= 5; i++) {
+            _results.push(0);
+          }
+          return _results;
+        })());
+      }
+      return _results;
+    },
+    place: function() {
+      var added, col, dist, i, _ref;
+      col = ball.col;
       added = false;
       dist = box_h;
       this.matrix[col].reverse();
       for (i = 0, _ref = this.matrix[col].length - 1; (0 <= _ref ? i <= _ref : i >= _ref); (0 <= _ref ? i += 1 : i -= 1)) {
         if (!added && this.matrix[col][i] === 0) {
-          this.matrix[col][i] = turn;
-          dist -= ball_w * (i + 1);
+          this.matrix[col][i] = this.turn;
+          dist -= ball.w * (i + 1);
           added = true;
         }
       }
@@ -57,18 +57,18 @@
       }
     },
     highlight_col: function(x) {
-      ball.col = parseInt((x + ball_w) / ball_w);
+      ball.col = parseInt(x / ball.w);
       $('#cols li').removeClass('highlight');
       return $('#c' + ball.col).addClass('highlight');
     },
     new_turn: function() {
+      this.turn = (this.turns % 2) + 1;
       this.turns += 1;
-      turn = this.turns % 2 + 1;
-      console.log(turn);
       return this.check_win();
     },
     check_win: function() {
-      var i, item, item_str, j, row, to_check, _i, _len;
+      var i, item, item_str, j, row, to_check, winner, _i, _len;
+      winner = false;
       if (this.turns === 43) {
         if (confirm('Game ended in a draw. New game?')) {
           this.new_game();
@@ -90,57 +90,67 @@
             }
             return _results;
           }).call(this);
-          console.log(row);
           if (row.real_len() > 3) {
             to_check.push(row);
           }
         }
-        console.log(to_check);
         for (_i = 0, _len = to_check.length; _i < _len; _i++) {
           item = to_check[_i];
           item_str = item.join('');
           if (/1{4,}/.test(item_str)) {
-            return alert('Red wins!');
-          }
-          if (/2{4,}/.test(item_str)) {
-            return alert('Blue wins!');
+            winner = 'Red';
+            break;
+          } else if (/2{4,}/.test(item_str)) {
+            winner = 'Blue';
+            break;
           }
         }
       }
+      if (winner) {
+        if (confirm('' + winner + ' wins! Play again?')) {
+          return this.new_game();
+        } else {
+          return this.clear();
+        }
+      }
+    },
+    clear: function() {
+      return this.matrix = this.new_matrix();
     },
     new_game: function() {
-      this.turns = 0;
+      board.clear();
       ball.col = 3;
-      $('#bag').html('');
-      return this.matrix = new_matrix();
+      $('#cols li').html('');
+      return this.new_turn();
     }
   };
   ball = {
     col: 3,
+    w: 44,
     move: function(cols) {
       var total;
       total = this.col + cols;
       if (total > 6) {
-        this.col = 6;
+        total = 6;
       } else if (total < 0) {
-        this.col = 0;
+        total = 0;
       }
-      return {
-        "else": this.col = total
-      };
+      this.col = total;
+      return board.highlight_col(this.col * ball.w);
     },
     drop: function(y) {
-      var color;
+      var b_id, color, x;
       if (y == null) {
         y = 0;
       }
       color = '';
-      if (turn === 2) {
-        color = 'blue';
+      if (board.turn === 2) {
+        color = ' blue';
       }
-      $('#bag').append('<div id="b' + board.turns + '" class="ball ' + color + '"></div>');
-      $('#b' + board.turns).css('-webkit-transform', 'translate(' + ($(this).offset().left - this.col * ball_w) + 'px, ' + y + 'px)');
-      board.highlight();
+      b_id = 'b' + board.turns;
+      $('#c' + this.col).append('<div id="' + b_id + '" class="ball' + color + '"></div>');
+      x = this.col * ball.w - $('#' + b_id).offset().left + 6;
+      $('#b' + board.turns).css('-webkit-transform', 'translate(' + x + 'px, ' + y + 'px)');
       return board.new_turn();
     }
   };
@@ -168,36 +178,36 @@
     return prev = as;
   };
   setup = function() {
-    ball_w = 44;
     box_h = $('#box').height();
     $(window).bind('keyup', function(e) {
       switch (e.keyCode) {
         case 32:
-          return board.place(ball.col());
+          return board.place();
         case 37:
           return ball.move(-1);
         case 39:
           return ball.move(1);
       }
     });
-    $('#cols').bind('touchstart touchmove touchend', function(e) {
-      var touch_x;
+    $('#cols').bind('touchmove touchend', function(e) {
       e.preventDefault();
-      touch_x = e.targetTouches[0].pageX;
       switch (e.type) {
-        case 'touchstart':
-          return board.highlight_col(touch_x);
         case 'touchmove':
-          return board.highlight_col(touch_x);
+          return board.highlight_col(e.targetTouches[0].pageX);
         case 'touchend':
-          return ball.place();
+          return board.place();
       }
+    });
+    $('#cols li').bind('touchstart', function(e) {
+      var x;
+      e.preventDefault();
+      x = $(this).offset().left;
+      return board.highlight_col(x);
     });
     $('body').bind('touchmove touchstart', function(e) {
       return e.preventDefault();
     });
-    board.new_turn();
-    ball.move();
+    board.new_game();
     if (waiting) {
       return window.addEventListener('devicemotion', log_acceleration, false);
     }
