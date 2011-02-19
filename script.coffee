@@ -29,11 +29,6 @@ board =
         (0 for i in [0..5] for j in [0..6])
         
     place: ->
-        # unbind the event listeners to avoid excessive plays
-        $(window).unbind()
-        $('#cols').unbind()
-        $('#cols li').unbind()
-        
         row = 0
         col = ball.col
         added = false
@@ -54,8 +49,6 @@ board =
             if pause_audio()
                 document.getElementById('a'+row).play()
             ball.drop(dist)
-        else:
-            this.rebind()
             
     highlight_col: (x) ->
         ball.col = parseInt (x) / ball.w
@@ -63,29 +56,7 @@ board =
         $('#cols li').removeClass('highlight')
         $('#c'+ball.col).addClass('highlight')
     
-    rebind: ->
-        # for testing on my computer
-        $(window).bind 'keyup', (e) ->
-            switch e.keyCode
-                when 32 then board.place()
-                when 37 then ball.move(-1)
-                when 39 then ball.move(1)
-                
-        $('#cols').bind 'touchmove touchend', (e) ->
-            switch(e.type)
-                when 'touchmove'
-                    e.preventDefault()
-                    board.highlight_col e.targetTouches[0].pageX
-                when 'touchend' then board.place()
-
-        $('#cols li').bind 'touchstart', (e) ->
-            e.preventDefault()
-            x = $(this).offset().left
-            board.highlight_col(x)
-    
-    new_turn: ->
-        setTimeout(board.rebind(), 1000)
-            
+    new_turn: ->            
         $('#cols li').removeClass('highlight')
                 
         this.turn = (this.turns % 2) + 1
@@ -227,6 +198,25 @@ log_acceleration = (m) ->
 setup = ->    
     $('body').bind 'touchmove touchstart', (e) ->
         e.preventDefault()
+        
+    # for testing on my computer
+    $(window).bind 'keyup', (e) ->
+        switch e.keyCode
+            when 32 then board.place()
+            when 37 then ball.move(-1)
+            when 39 then ball.move(1)
+            
+    $('#cols').bind 'touchmove touchend', (e) ->
+        switch(e.type)
+            when 'touchmove'
+                e.preventDefault()
+                board.highlight_col e.targetTouches[0].pageX
+            when 'touchend' then board.place()
+
+    $('#cols li').bind 'touchstart', (e) ->
+        e.preventDefault()
+        x = $(this).offset().left
+        board.highlight_col(x)
         
     board.new_game()
     

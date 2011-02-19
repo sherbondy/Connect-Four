@@ -51,9 +51,6 @@
     },
     place: function() {
       var added, col, dist, i, row, _ref;
-      $(window).unbind();
-      $('#cols').unbind();
-      $('#cols li').unbind();
       row = 0;
       col = ball.col;
       added = false;
@@ -73,47 +70,16 @@
         if (pause_audio()) {
           document.getElementById('a' + row).play();
         }
-        ball.drop(dist);
+        return ball.drop(dist);
       }
-      return {
-        "else": this.rebind()
-      };
     },
     highlight_col: function(x) {
       ball.col = parseInt(x / ball.w);
       $('#cols li').removeClass('highlight');
       return $('#c' + ball.col).addClass('highlight');
     },
-    rebind: function() {
-      $(window).bind('keyup', function(e) {
-        switch (e.keyCode) {
-          case 32:
-            return board.place();
-          case 37:
-            return ball.move(-1);
-          case 39:
-            return ball.move(1);
-        }
-      });
-      $('#cols').bind('touchmove touchend', function(e) {
-        switch (e.type) {
-          case 'touchmove':
-            e.preventDefault();
-            return board.highlight_col(e.targetTouches[0].pageX);
-          case 'touchend':
-            return board.place();
-        }
-      });
-      return $('#cols li').bind('touchstart', function(e) {
-        var x;
-        e.preventDefault();
-        x = $(this).offset().left;
-        return board.highlight_col(x);
-      });
-    },
     new_turn: function() {
       var color;
-      setTimeout(board.rebind(), 1000);
       $('#cols li').removeClass('highlight');
       this.turn = (this.turns % 2) + 1;
       this.turns += 1;
@@ -269,6 +235,31 @@
     var hide_address_bar, i;
     $('body').bind('touchmove touchstart', function(e) {
       return e.preventDefault();
+    });
+    $(window).bind('keyup', function(e) {
+      switch (e.keyCode) {
+        case 32:
+          return board.place();
+        case 37:
+          return ball.move(-1);
+        case 39:
+          return ball.move(1);
+      }
+    });
+    $('#cols').bind('touchmove touchend', function(e) {
+      switch (e.type) {
+        case 'touchmove':
+          e.preventDefault();
+          return board.highlight_col(e.targetTouches[0].pageX);
+        case 'touchend':
+          return board.place();
+      }
+    });
+    $('#cols li').bind('touchstart', function(e) {
+      var x;
+      e.preventDefault();
+      x = $(this).offset().left;
+      return board.highlight_col(x);
     });
     board.new_game();
     for (i = 0; i <= 5; i++) {
