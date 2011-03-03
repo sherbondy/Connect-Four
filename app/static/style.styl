@@ -1,0 +1,113 @@
+*
+    margin: 0;
+    padding: 0;
+    line-height: 1;
+    font-size: 100%;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    -khtml-user-select: none;
+
+
+body
+    width: 100%;
+    background: #846b47 url('img/bump4bg.png') no-repeat;
+
+
+#top
+    width: 320px;
+    height: 76px;
+    background: url('img/bump4_bg_top_skinny.png') repeat-x 0px -4px;
+    margin-bottom: 26px;
+
+
+.ball
+    -webkit-transition: all 0.5s ease-in;
+    position: absolute;
+    z-index: -1;
+    width: 45px;
+    height: 45px;
+    top: 47px;
+    background-repeat: no-repeat;
+    background-position: 8px 9px;
+    background-image: url('img/bump4pieceRedNew.png');
+    &.black
+        background-image: url('img/bump4pieceBlackNew.png');
+
+
+
+#black_arrow, #red_arrow
+    position: absolute;
+    display: none;
+    top: 29px;
+
+#black_arrow
+    left: 0px;
+
+#red_arrow
+    left: 301px;
+
+#black_move, #red_move
+    position: absolute;
+    width: 56px;
+    height: 57px;
+    top: 9px;
+    background-repeat: no-repeat;
+    background-position: center center;
+
+#black_move
+    left: 11px;
+    background-image: url('img/bump4_whosemove_black.png');
+    &.glow
+        background-image: url('img/bump4_whosemove_black_glow.png');
+
+
+#red_move
+    left: 252px;
+    background-image: url('img/bump4_whosemove_red.png');
+    &.glow
+        background-image: url('img/bump4_whosemove_red_glow.png');
+
+
+
+#black_text, #red_text
+    position: absolute;
+    top: 16px;
+    width: 91px;
+    height: 48px;
+    line-height: 1.5;
+    font-weight: bold;
+    font-size: 14px;
+
+#black_text
+    left: 64px;
+
+#red_text
+    left: 164px;
+    text-align: right;
+
+
+#cols
+    overflow: hidden;
+    width: 315px;
+    margin-left: 3px;
+    height: 325px;
+    background: url('img/bump4boardNew.png') no-repeat;
+    z-index: 2;
+
+    li
+        display: block;
+        float: left;
+        width: 45px;
+        height: 45*6 + 10px;
+        background-color: none;
+
+        &.highlight
+            background-color: rgba(122, 128, 217, 0.2);
+
+
+    #c0
+        border-radius: 12px 0px 0px 12px;
+
+    #c6
+        border-radius: 0px 12px 12px 0px;
+
+
