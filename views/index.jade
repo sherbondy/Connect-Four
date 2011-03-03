@@ -1,0 +1,24 @@
+div#top
+  div#pregame
+    a#play_friend(href:'#')
+      img(src:'img/bump_to_play_a_friend.png')
+
+  div#playing
+    - var colors = ['black', 'red']
+    - each color in colors
+      img(id:color+'_arrow', src:'/img/bump4_arrow_'+color+'.png')
+      div(id:color+'_move')
+      p(id:color+'_text')
+
+ol#cols
+  - each num in [0,1,2,3,4,5,6]
+    li(id:'c'+num)
+
+- each num in [0,1,2,3,4,5]
+  audio(id:'a'+num, src:'/audio/sound_row'+num+'.mp3')
+
+audio#a_quit(src:'/audio/sound_quit_button.mp3')
+audio#a_win(src:'/audio/sounds_youwin.mp3')
+
+script(type:'text/javascript', src:'/script.js')
+
