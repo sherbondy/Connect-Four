@@ -16,6 +16,15 @@ pause_audio = ->
         item.pause()
         true
 
+socket = new io.Socket null, {port:3000}
+socket.connect()
+
+socket.on 'connect', ->
+    socket.send 'hey buddy!'
+socket.on 'message', (obj)->
+    console.log obj
+
+
 board =
     # create a 7x6 matrix
 
@@ -140,6 +149,8 @@ board =
 
 
     new_game: ->
+        socket.send 'play'
+        
         this.matrix = this.new_matrix()
         this.turns = 0
         $('#cols li').html('')
@@ -200,6 +211,7 @@ log_acceleration = (m) ->
       # save previous list of acceleration values
       prev = as
 
+
 # initialize variables
 setup = ->
     $('body').bind 'touchmove touchstart', (e) ->
@@ -231,6 +243,7 @@ setup = ->
 
     for i in [0..5]
         document.getElementById('a'+i).load()
+
     document.getElementById('a_quit').load()
     document.getElementById('a_win').load()
 
@@ -246,12 +259,5 @@ setup = ->
                             log_acceleration,
                             false
 
-$(document).ready setup
 
-socket = new io.Socket null, {port:3000}
-socket.connect()
-socket.on 'connect', ->
-    console.log 'client connected!'
-    socket.send 'hey buddy!'
-socket.on 'message', (obj)->
-    console.log obj
+$(document).ready setup
