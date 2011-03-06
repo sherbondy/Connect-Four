@@ -1,5 +1,5 @@
 (function() {
-  var ball, board, log_acceleration, pause_audio, playing, prev, prev_a, setup, waiting;
+  var ball, board, log_acceleration, pause_audio, playing, prev, prev_a, setup, socket, waiting;
   prev_a = false;
   waiting = false;
   playing = false;
@@ -219,25 +219,27 @@
   };
   log_acceleration = function(m) {
     var a, a_changed, as, diffs, i, max_diff;
-    a = m.acceleration;
-    as = [a.x, a.y, a.z];
-    if (prev) {
-      diffs = (function() {
-        var _results;
-        _results = [];
-        for (i = 0; i <= 2; i++) {
-          _results.push(as[i] - prev[i]);
+    if (waiting) {
+      a = m.acceleration;
+      as = [a.x, a.y, a.z];
+      if (prev) {
+        diffs = (function() {
+          var _results;
+          _results = [];
+          for (i = 0; i <= 2; i++) {
+            _results.push(as[i] - prev[i]);
+          }
+          return _results;
+        })();
+        max_diff = Math.max.apply(null, diffs);
+        a_changed = Math.abs(parseInt(as[diffs.indexOf(max_diff)]));
+        if (max_diff > 4 && a_changed < 2) {
+          alert('BUMP');
         }
-        return _results;
-      })();
-      max_diff = Math.max.apply(null, diffs);
-      a_changed = Math.abs(parseInt(as[diffs.indexOf(max_diff)]));
-      if (max_diff > 4 && a_changed < 2) {
-        alert('BUMP');
+        $('#bumped').text(parseInt(max_diff));
       }
-      $('#bumped').text(parseInt(max_diff));
+      return prev = as;
     }
-    return prev = as;
   };
   setup = function() {
     var hide_address_bar, i;
@@ -286,9 +288,18 @@
     };
     hide_address_bar();
     setInterval(hide_address_bar, 2000);
-    if (waiting) {
-      return window.addEventListener('devicemotion', log_acceleration, false);
-    }
+    return window.addEventListener('devicemotion', log_acceleration, false);
   };
   $(document).ready(setup);
+  socket = new io.Socket(null, {
+    port: 3000
+  });
+  socket.connect();
+  socket.on('connect', function() {
+    console.log('client connected!');
+    return socket.send('hey buddy!');
+  });
+  socket.on('message', function(obj) {
+    return console.log(obj);
+  });
 }).call(this);

@@ -3,7 +3,6 @@ waiting = false      # waiting for a bump
 playing = false      # playing a game?
 prev = 0
 
-
 Array::real_len = ->
     if not this.length
         0
@@ -181,24 +180,25 @@ ball =
 
 
 log_acceleration = (m) ->
-    a = m.acceleration
-    as = [a.x,a.y,a.z]
+    if waiting
+      a = m.acceleration
+      as = [a.x,a.y,a.z]
 
-    if prev
-        # get the difference in acceleration values from last measure
-        diffs = (as[i]-prev[i] for i in [0..2])
-        # find which difference is largest
-        max_diff = Math.max.apply null, diffs
-        # isolate the current a (x, y, or z) value of greatest change
-        a_changed = Math.abs parseInt as[diffs.indexOf(max_diff)]
+      if prev
+          # get the difference in acceleration values from last measure
+          diffs = (as[i]-prev[i] for i in [0..2])
+          # find which difference is largest
+          max_diff = Math.max.apply null, diffs
+          # isolate the current a (x, y, or z) value of greatest change
+          a_changed = Math.abs parseInt as[diffs.indexOf(max_diff)]
 
-        alert 'BUMP' if max_diff > 4 and a_changed < 2
+          alert 'BUMP' if max_diff > 4 and a_changed < 2
 
 
-        $('#bumped').text parseInt max_diff
+          $('#bumped').text parseInt max_diff
 
-    # save previous list of acceleration values
-    prev = as
+      # save previous list of acceleration values
+      prev = as
 
 # initialize variables
 setup = ->
@@ -242,9 +242,16 @@ setup = ->
 
     setInterval hide_address_bar, 2000
 
-    if waiting
-        window.addEventListener 'devicemotion',
-                                log_acceleration,
-                                false
+    window.addEventListener 'devicemotion',
+                            log_acceleration,
+                            false
 
-$(document).ready(setup)
+$(document).ready setup
+
+socket = new io.Socket null, {port:3000}
+socket.connect()
+socket.on 'connect', ->
+    console.log 'client connected!'
+    socket.send 'hey buddy!'
+socket.on 'message', (obj)->
+    console.log obj

@@ -76,7 +76,7 @@ body {
     margin: 16px auto;
     background-color: #000;
     -webkit-border-radius: 12px;
-    &.highlight img {
+    &.highlight img, &:hover img {
         opacity: 0.5;
     }
 }
@@ -107,14 +107,14 @@ body {
     height: 325px;
     background: url('img/bump4boardNew.png') no-repeat;
     z-index: 2;
-    
+
     li {
         display: block;
         float: left;
         width: 45px;
         height: 45*6 + 10px;
         background-color: none;
-        
+
         &.highlight {
             background-color: rgba(122, 128, 217, 0.2);
         }

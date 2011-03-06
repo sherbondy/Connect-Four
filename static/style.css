@@ -72,7 +72,7 @@ body {
   background-color: #000;
   -webkit-border-radius: 12px;
 }
-#play_friend.highlight img {
+#play_friend.highlight img, #play_friend:hover img {
   opacity: 0.5;
 }
 #playing {
