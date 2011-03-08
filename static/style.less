@@ -1,19 +1,29 @@
+@import url('animations.css');
+/* limitations in less.js prevent keyframe usage */
+
 * {
     margin: 0;
     padding: 0;
     line-height: 1;
     font-size: 100%;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    -khtml-user-select: none;
+    -webkit-user-select: none;
+}
+input {
+  -webkit-user-select: auto;
 }
 
 body {
-    width: 100%;
-    background: #846b47 url('img/bump4bg.png') no-repeat;
+    width: 320px;
+    margin: 0 auto;
+    background: #846b47 url('img/bump4bg.png') repeat-x;
 }
 
 #top {
-    width: 320px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
     height: 76px;
     background: url('img/bump4_bg_top_skinny.png') repeat-x 0px -4px;
     margin-bottom: 26px;
@@ -44,7 +54,7 @@ body {
     left: 0px;
 }
 #red_arrow {
-    left: 301px;
+    right: 0px;
 }
 #black_move, #red_move {
     position: absolute;
@@ -62,7 +72,7 @@ body {
     }
 }
 #red_move {
-    left: 252px;
+    right: 11px;
     background-image: url('img/bump4_whosemove_red.png');
     &.glow {
         background-image: url('img/bump4_whosemove_red_glow.png');
@@ -96,13 +106,14 @@ body {
     left: 64px;
 }
 #red_text {
-    left: 164px;
+    right: 64px;
     text-align: right;
 }
 
 #cols {
     overflow: hidden;
     width: 315px;
+    margin-top: 100px;
     margin-left: 3px;
     height: 325px;
     background: url('img/bump4boardNew.png') no-repeat;
@@ -125,4 +136,167 @@ body {
     #c6 {
         border-radius: 0px 12px 12px 0px;
     }
+}
+
+#bump {
+    display: none;
+    position: absolute;
+    z-index: 2;
+    top: 14px;
+    width: 300-14*2px;
+    left: 50%;
+    height: 200px;
+    margin-left: -150px;
+    border-width: 36px 14px 14px 14px;
+    border-color: #4c6997;
+    -webkit-border-image: url('img/popup.png') 36 14 14 14 repeat repeat;
+    line-height: 1.5;
+
+    &.visible {
+      display: block;
+    }
+
+    header {
+      height: 64px;
+      margin-bottom: 16px;
+    }
+    h3 {
+      font-size: 18px;
+      padding: 24px 0px;
+    }
+    p {
+      background: rgba(255,255,255,0.75);
+      border-radius: 8px;
+      margin-bottom: 16px;
+      padding: 8px;
+      line-height: 1.5;
+    }
+}
+#bump_logo {
+  text-indent: -9999px;
+  width: 80px;
+  height: 24px;
+  background: url('img/bump_white.png') no-repeat;
+  background-size: 100%;
+  margin: -30px auto 8px;
+}
+#close {
+  display: block;
+  float: right;
+  font-weight: bold;
+  text-decoration: none;
+  font-size: 18px;
+  margin: -40px -12px 0 0;
+  padding: 8px;
+  color: #4a4b4d;
+  &:hover, &.highlight {
+    opacity: 0.5;
+  }
+}
+
+#connect h3 {
+  margin-left: 72px;
+  text-align: center;
+}
+#wifi, #left_bump, #right_bump {
+  float: left;
+  background-size: 100%;
+}
+#wifi {
+  background: url('img/bump_signal.png');
+  width: 64px;
+  height: 24px;
+}
+#left_bump, #right_bump {
+  width: 32px;
+  height: 64px;
+  background: url('img/bump_hand.png');
+}
+#left_bump {
+  margin-left: -64px;
+  -webkit-animation: bumpLeft 2s infinite;
+}
+#right_bump {
+  margin-left: -32px;
+  -webkit-transform: rotateY(180deg);
+  -webkit-animation: bumpRight 2s infinite;
+}
+#my_name {
+  display: block;
+  font-size: 16px;
+  height: 48px;
+  width: 160px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  float: left;
+  font-weight: bold;
+  margin: 0 8px;
+}
+#name_button {
+  float: right;
+  background: -webkit-gradient(linear, 0% 0%, 0% 100%,
+    from(#a7b4c4),
+    color-stop(0.5, #7790ae),
+    color-stop(0.5, #6d86a8),
+    to(#6b84a7)), repeat-x;
+  background-size: 100%;
+  border: 1px solid #526078;
+  border-radius: 8px;
+  color: #fff;
+  text-decoration: none;
+  padding: 8px;
+  text-shadow: 0px 1px 0px #000;
+  font-size: 14px;
+  &:hover, &.highlight {
+    background: -webkit-gradient(linear, 0% 0%, 0% 100%,
+    from(darken(#a7b4c4, 20%)),
+    color-stop(0.5, darken(#7790ae, 20%)),
+    color-stop(0.5, darken(#6d86a8, 20%)),
+    to(darken(#6b84a7, 20%))), repeat-x;
+
+  }
+}
+
+#your_name {
+  display: block;
+  -webkit-border-radius: 8px;
+  width: 200px;
+  padding: 4px 8px;
+  margin: 0 auto;
+  border: none;
+  outline: none;
+  color: #000;
+}
+
+#bump>div {
+  display: none;
+  width: 100%;
+  clear: both;
+  height: 200px;
+  position: absolute;
+  &.visible {
+    display: block;
+  }
+}
+
+#overlay {
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: rgba(255,255,255,0.5);
+  z-index: 1;
+  display: none;
+  &.visible {
+    display: block;
+  }
+}
+
+#activity {
+  display: block;
+  width: 32px;
+  height: 32px;
+  margin: 0 auto;
 }

@@ -44,36 +44,64 @@ red.on 'error', (err)->
 
 # socket.io server
 
+pick_client = (client, message, p1, p2) ->
+    if client.sessionId is p1
+        io.clients[p2].send message
+    else if client.sessionId is p2
+        io.clients[p1].send message
+
+
+validate_clients = (p1, p2, func...) ->
+    if io.clients[p2] and not io.clients[p1]
+        console.log 'P1 disconnected'
+        io.clients[p2].send {action:'quit'}
+    else if io.clients[p1] and not io.clients[p2]
+        console.log 'P2 disconnected'
+        io.clients[p1].send {action:'quit'}
+    else if io.clients[p1] and io.clients[p2]
+        func
+
 io = io.listen app
 
 pair_up = ->
-    red.llen 'waiting', (err, res)->
+    red.scard 'waiting', (err, res)->
         if res >= 2
-            red.multi().lpop('waiting').lpop('waiting').exec (err, replies)->
+            red.multi().spop('waiting').spop('waiting').exec (err, replies)->
                 console.log replies
                 # players 1 and 2
-                p1 = replies[0]
-                p2 = replies[1]
-
-                red.incr 'next.game.id', (err, num)->
+                [p1, p2] = replies
+                validate_clients p1, p2, red.incr 'next.game.id', (err, num)->
                     s_name = 'game:'+num+':'
-                    red.mset s_name+'p1', p1, s_name+'p2', p2, (err, res)->
+                    red.mset s_name+'p1', p1, s_name+'p2', p2,
+                      'client:'+p1+':game', num, 'client:'+p2+':game', num, (err, res)->
                         io.clients[p1].send {game:num, player:1}
                         io.clients[p2].send {game:num, player:2}
-
 
 io.on 'connection', (client)->
 
     client.on 'message', (message)->
         console.log message
         if message is 'play'
-            red.rpush 'waiting', client.sessionId, (err, res)->
-                console.log err
-                console.log res
+            red.sadd 'waiting', client.sessionId
+        else if message.game
+            console.log 'game!'
+            s_name = 'game:'+message.game+':'
+            red.mget s_name+'p1', s_name+'p2', (err, replies)->
+                console.log replies
+                [p1, p2] = replies
+                validate_clients p1, p2, pick_client client, message, p1, p2
+
 
     client.on 'disconnect', ->
-        red.lrem 'waiting', -1, client.sessionId, (err, res)->
-            console.log err
+        red.srem 'waiting', client.sessionId
+        console.log client.sessionId
+        red.get 'client:'+client.sessionId+':game', (err, res)->
             console.log res
+            if res
+                console.log 'disconnecter game found'
+                red.mget 'game:'+res+':p1', 'game:'+res+':p2', (err, res)->
+                    console.log res
+                    [p1, p2] = res
+                    validate_clients p1, p2
 
 setInterval pair_up, 1000

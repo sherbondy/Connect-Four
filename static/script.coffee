@@ -1,6 +1,4 @@
-prev_a = false       # previous acceleration value
-waiting = false      # waiting for a bump
-playing = false      # playing a game?
+# previous acceleration value
 prev = 0
 
 Array::real_len = ->
@@ -11,10 +9,33 @@ Array::real_len = ->
         (n += 1 for i in [0..this.length-1] when this[i] isnt 0)
         n
 
+String::trim = ->
+    this.replace(/^\s+|\s+$/g,'')
+
 pause_audio = ->
     for item in document.getElementsByTagName('audio')
         item.pause()
         true
+
+bump_menu = (div) ->
+    $('#bump>div').removeClass 'visible'
+    if div
+        if not $('#bump').hasClass 'visible'
+            $('#bump').addClass 'visible'
+            $('#overlay').addClass 'visible'
+        $(div).addClass 'visible'
+    else
+        $('#bump').removeClass 'visible'
+        $('#overlay').removeClass 'visible'
+
+opponent_quit = ->
+    bump_menu('#opponent_quit')
+    board.quit()
+
+no_show = ->
+    if not sessionStorage.game
+      bump_menu '#no_match'
+      connect_timeout = window.setTimeout "bump_menu('#connect')", 2000
 
 socket = new io.Socket null, {port:3000}
 socket.connect()
@@ -23,7 +44,21 @@ socket.on 'connect', ->
     socket.send 'hey buddy!'
 socket.on 'message', (obj)->
     console.log obj
+    if obj.no_match
+        no_show()
+    else if obj.drop and not board.my_turn()
+        ball.col = parseInt(obj.drop)
+        board.place()
+    else if obj.action
+        if obj.action is 'quit'
+            opponent_quit()
+    else if obj.game
+        bump_menu()
 
+        sessionStorage.game = obj.game
+        if obj.player
+            sessionStorage.player = obj.player
+        board.new_game()
 
 board =
     # create a 7x6 matrix
@@ -38,37 +73,47 @@ board =
         (0 for i in [0..5] for j in [0..6])
 
     place: ->
-        if playing
-            row = 0
-            col = ball.col
-            added = false
-            dist = this.h
+        row = 0
+        col = ball.col
+        added = false
+        dist = this.h
 
-            this.matrix[col].reverse()
-            for i in [0.. this.matrix[col].length - 1]
-                if not added and this.matrix[col][i] is 0
-                    this.matrix[col][i] = this.turn
-                    dist -= ball.w*(i+1) + (this.matrix[col].real_len()-5)
-                    added = true
-                    row = i
-                    break
+        this.matrix[col].reverse()
+        for i in [0.. this.matrix[col].length - 1]
+            if not added and this.matrix[col][i] is 0
+                this.matrix[col][i] = this.turn
+                dist -= ball.w*(i+1) + (this.matrix[col].real_len()-5)
+                added = true
+                row = i
+                break
 
-            this.matrix[col].reverse()
-            # only create a new ball if there was actually space to add
-            if added
-                if pause_audio()
-                    document.getElementById('a'+row).play()
-                ball.drop(dist)
+        this.matrix[col].reverse()
+        # only create a new ball if there was actually space to add
+        if added
+            if pause_audio()
+                document.getElementById('a'+row).play()
+            ball.drop(dist)
 
-    highlight_col: (x) ->
-        if playing
-            ball.col = parseInt (x) / ball.w
+    highlight_col: (x, using_mouse=false) ->
+        if board.my_turn()
+            if using_mouse
+                x_diff = x
+            else
+                x_diff = x - $('#cols').offset().left
+            ball.col = parseInt(x_diff/ball.w)
 
             $('#cols li').removeClass('highlight')
             $('#c'+ball.col).addClass('highlight')
 
+    my_turn: ->
+        if sessionStorage.player
+            board.turn is parseInt(sessionStorage.player)
+        else
+            false
+
     new_turn: ->
         $('#cols li').removeClass('highlight')
+        player = this.turn_text[sessionStorage.player]
 
         this.turn = (this.turns % 2) + 1
         this.turns += 1
@@ -81,7 +126,11 @@ board =
         $('#black_move, #red_move').removeClass('glow')
         $('#'+color+'_move').addClass('glow')
         $('#black_text, #red_text').text('')
-        $('#'+color+'_text').text(color+' player\'s turn.')
+
+        if player is color
+            $('#'+color+'_text').text('My turn.')
+        else
+            $('#'+color+'_text').text('Waiting...')
         this.check_win()
 
     check_win: ->
@@ -139,24 +188,35 @@ board =
 
         if winner
             if pause_audio()
+                winner_text = 'Your opponent won.'
+                if this.turn isnt parseInt(sessionStorage.player)
+                    winner_text = 'You win!'
                 document.getElementById('a_win').play()
-                if confirm ''+winner+' wins! Play again?'
-                    setTimeout(this.new_game(), 1000)
+                if confirm winner_text+' Play again?'
+                    this.new_game()
                 else
                     if pause_audio()
                         document.getElementById('a_quit').play()
-                        this.new_game()
+                        socket.send {action:'quit', game:sessionStorage.game}
+                        this.quit()
 
 
-    new_game: ->
-        socket.send 'play'
-        
+    reset: ->
         this.matrix = this.new_matrix()
         this.turns = 0
         $('#cols li').html('')
+
+    quit: ->
+        $('#pregame').show()
+        $('#playing').hide()
+        sessionStorage.clear()
+        this.reset()
+        quit_timeout = window.setTimeout 'bump_menu()', 2000
+
+    new_game: ->
+        this.reset()
         $('#pregame').hide()
         $('#playing').show()
-        playing = true
 
         this.new_turn()
 
@@ -187,29 +247,41 @@ ball =
             'left': this.col*ball.w+6
             '-webkit-transform': 'translate3d(0px, '+y+'px, 0px)')
 
+        if board.my_turn()
+            # we wrap the col in an array to prevent 0 from evaluating as false
+            socket.send {drop:[ball.col], game:sessionStorage.game}
         board.new_turn()
 
 
 log_acceleration = (m) ->
-    if waiting
-      a = m.acceleration
-      as = [a.x,a.y,a.z]
+    if $('#connect').hasClass 'visible'
+        a = m.accelerationIncludingGravity
+        as = [a.x,a.y,a.z]
 
-      if prev
-          # get the difference in acceleration values from last measure
-          diffs = (as[i]-prev[i] for i in [0..2])
-          # find which difference is largest
-          max_diff = Math.max.apply null, diffs
-          # isolate the current a (x, y, or z) value of greatest change
-          a_changed = Math.abs parseInt as[diffs.indexOf(max_diff)]
+        if prev
+            # get the difference in acceleration values from last measure
+            diffs = (as[i]-prev[i] for i in [0..2])
+            # find which difference is largest
+            max_diff = Math.max.apply null, diffs
+            # isolate the current a (x, y, or z) value of greatest change
+            a_changed = Math.abs parseInt as[diffs.indexOf(max_diff)]
 
-          alert 'BUMP' if max_diff > 4 and a_changed < 2
+            if max_diff > 4 and a_changed < 2
+                bump_menu '#connecting'
+                socket.send 'play'
+                # if no match is found
+                console.log new Date().getTime()
+                no_show_timeout = window.setTimeout 'no_show()', 5000
 
 
-          $('#bumped').text parseInt max_diff
+            $('#bumped').text parseInt max_diff
 
-      # save previous list of acceleration values
-      prev = as
+        # save previous list of acceleration values
+        prev = as
+
+test_bump = ->
+    socket.send 'play'
+    return true
 
 
 # initialize variables
@@ -219,27 +291,70 @@ setup = ->
 
     # for testing on my computer
     $(window).bind 'keyup', (e) ->
-        switch e.keyCode
-            when 32 then board.place()
-            when 37 then ball.move(-1)
-            when 39 then ball.move(1)
+        if board.my_turn()
+            switch e.keyCode
+                when 32 
+                    board.place()
+                when 37 then ball.move(-1)
+                when 39 then ball.move(1)
 
     $('#cols').bind 'touchmove touchend', (e) ->
-        switch(e.type)
-            when 'touchmove'
-                e.preventDefault()
-                board.highlight_col e.targetTouches[0].pageX
-            when 'touchend' then board.place()
+        if board.my_turn()
+            switch e.type
+                when 'touchmove'
+                    e.preventDefault()
+                    board.highlight_col e.targetTouches[0].pageX
+                when 'touchend'
+                    board.place()
 
-    $('#cols li').bind 'touchstart', (e) ->
-        e.preventDefault()
-        x = $(this).offset().left
-        board.highlight_col(x)
+    $('#cols li').bind 'touchstart mouseover click', (e) ->
+        if board.my_turn()
+          switch e.type
+              when 'touchstart'
+                  e.preventDefault()
+                  x = $(this).offset().left
+                  board.highlight_col(x)
+              when 'mouseover'
+                  x = $(this).attr('id').split('c')[1]*ball.w
+                  board.highlight_col(x, true)
+              when 'click'
+                  board.place()
 
     $('#play_friend').bind 'touchend click', (e) ->
-        board.new_game()
+        bump_menu('#connect')
 
-    $('a').live 'touchstart touchend', (e) -> $(this).toggleClass('highlight')
+    $('#close').bind 'touchend click', (e) ->
+        bump_menu()
+
+    $('#name_button').bind 'touchend click', (e) ->
+        bump_menu('#edit_name')
+        if localStorage.my_name
+            $('#your_name').attr 'value', localStorage.my_name
+        # autofocus is broken in mobile safari :(
+        document.getElementById('your_name').focus()
+
+    set_my_name = (e) ->
+        if localStorage.my_name
+            $('#my_name').text localStorage.my_name
+
+    set_my_name()
+
+    name_submit = (e) ->
+        e.preventDefault()
+        new_name = $('#your_name').attr('value').trim()
+        if new_name
+            localStorage.my_name = new_name
+            set_my_name()
+        bump_menu('#connect')
+        document.getElementById('your_name').blur()
+
+    $('#new_name').bind 'submit', name_submit
+
+
+    $('a').live 'touchstart touchend click', (e) ->
+        e.preventDefault()
+        if e.type isnt 'click'
+            $(this).toggleClass('highlight')
 
     for i in [0..5]
         document.getElementById('a'+i).load()

@@ -1,7 +1,4 @@
-var ball, board, log_acceleration, pause_audio, playing, prev, prev_a, setup, socket, waiting;
-prev_a = false;
-waiting = false;
-playing = false;
+var ball, board, bump_menu, log_acceleration, no_show, opponent_quit, pause_audio, prev, setup, socket, test_bump;
 prev = 0;
 Array.prototype.real_len = function() {
   var i, n, _ref;
@@ -17,6 +14,9 @@ Array.prototype.real_len = function() {
     return n;
   }
 };
+String.prototype.trim = function() {
+  return this.replace(/^\s+|\s+$/g, '');
+};
 pause_audio = function() {
   var item, _i, _len, _ref, _results;
   _ref = document.getElementsByTagName('audio');
@@ -28,6 +28,30 @@ pause_audio = function() {
   }
   return _results;
 };
+bump_menu = function(div) {
+  $('#bump>div').removeClass('visible');
+  if (div) {
+    if (!$('#bump').hasClass('visible')) {
+      $('#bump').addClass('visible');
+      $('#overlay').addClass('visible');
+    }
+    return $(div).addClass('visible');
+  } else {
+    $('#bump').removeClass('visible');
+    return $('#overlay').removeClass('visible');
+  }
+};
+opponent_quit = function() {
+  bump_menu('#opponent_quit');
+  return board.quit();
+};
+no_show = function() {
+  var connect_timeout;
+  if (!sessionStorage.game) {
+    bump_menu('#no_match');
+    return connect_timeout = window.setTimeout("bump_menu('#connect')", 2000);
+  }
+};
 socket = new io.Socket(null, {
   port: 3000
 });
@@ -36,7 +60,24 @@ socket.on('connect', function() {
   return socket.send('hey buddy!');
 });
 socket.on('message', function(obj) {
-  return console.log(obj);
+  console.log(obj);
+  if (obj.no_match) {
+    return no_show();
+  } else if (obj.drop && !board.my_turn()) {
+    ball.col = parseInt(obj.drop);
+    return board.place();
+  } else if (obj.action) {
+    if (obj.action === 'quit') {
+      return opponent_quit();
+    }
+  } else if (obj.game) {
+    bump_menu();
+    sessionStorage.game = obj.game;
+    if (obj.player) {
+      sessionStorage.player = obj.player;
+    }
+    return board.new_game();
+  }
 });
 board = {
   h: 325,
@@ -61,40 +102,55 @@ board = {
   },
   place: function() {
     var added, col, dist, i, row, _ref;
-    if (playing) {
-      row = 0;
-      col = ball.col;
-      added = false;
-      dist = this.h;
-      this.matrix[col].reverse();
-      for (i = 0, _ref = this.matrix[col].length - 1; (0 <= _ref ? i <= _ref : i >= _ref); (0 <= _ref ? i += 1 : i -= 1)) {
-        if (!added && this.matrix[col][i] === 0) {
-          this.matrix[col][i] = this.turn;
-          dist -= ball.w * (i + 1) + (this.matrix[col].real_len() - 5);
-          added = true;
-          row = i;
-          break;
-        }
-      }
-      this.matrix[col].reverse();
-      if (added) {
-        if (pause_audio()) {
-          document.getElementById('a' + row).play();
-        }
-        return ball.drop(dist);
+    row = 0;
+    col = ball.col;
+    added = false;
+    dist = this.h;
+    this.matrix[col].reverse();
+    for (i = 0, _ref = this.matrix[col].length - 1; (0 <= _ref ? i <= _ref : i >= _ref); (0 <= _ref ? i += 1 : i -= 1)) {
+      if (!added && this.matrix[col][i] === 0) {
+        this.matrix[col][i] = this.turn;
+        dist -= ball.w * (i + 1) + (this.matrix[col].real_len() - 5);
+        added = true;
+        row = i;
+        break;
       }
     }
+    this.matrix[col].reverse();
+    if (added) {
+      if (pause_audio()) {
+        document.getElementById('a' + row).play();
+      }
+      return ball.drop(dist);
+    }
   },
-  highlight_col: function(x) {
-    if (playing) {
-      ball.col = parseInt(x / ball.w);
+  highlight_col: function(x, using_mouse) {
+    var x_diff;
+    if (using_mouse == null) {
+      using_mouse = false;
+    }
+    if (board.my_turn()) {
+      if (using_mouse) {
+        x_diff = x;
+      } else {
+        x_diff = x - $('#cols').offset().left;
+      }
+      ball.col = parseInt(x_diff / ball.w);
       $('#cols li').removeClass('highlight');
       return $('#c' + ball.col).addClass('highlight');
     }
   },
+  my_turn: function() {
+    if (sessionStorage.player) {
+      return board.turn === parseInt(sessionStorage.player);
+    } else {
+      return false;
+    }
+  },
   new_turn: function() {
-    var color;
+    var color, player;
     $('#cols li').removeClass('highlight');
+    player = this.turn_text[sessionStorage.player];
     this.turn = (this.turns % 2) + 1;
     this.turns += 1;
     color = this.turn_text[this.turn];
@@ -103,11 +159,15 @@ board = {
     $('#black_move, #red_move').removeClass('glow');
     $('#' + color + '_move').addClass('glow');
     $('#black_text, #red_text').text('');
-    $('#' + color + '_text').text(color + ' player\'s turn.');
+    if (player === color) {
+      $('#' + color + '_text').text('My turn.');
+    } else {
+      $('#' + color + '_text').text('Waiting...');
+    }
     return this.check_win();
   },
   check_win: function() {
-    var c, coords, diag_list, i, item, item_str, j, ld_arrs, rd_arrs, row, to_check, winner, _i, _j, _k, _len, _len2, _len3;
+    var c, coords, diag_list, i, item, item_str, j, ld_arrs, rd_arrs, row, to_check, winner, winner_text, _i, _j, _k, _len, _len2, _len3;
     winner = false;
     if (this.turns === 43) {
       if (confirm('Game ended in a draw. New game?')) {
@@ -172,26 +232,43 @@ board = {
     }
     if (winner) {
       if (pause_audio()) {
+        winner_text = 'Your opponent won.';
+        if (this.turn !== parseInt(sessionStorage.player)) {
+          winner_text = 'You win!';
+        }
         document.getElementById('a_win').play();
-        if (confirm('' + winner + ' wins! Play again?')) {
-          return setTimeout(this.new_game(), 1000);
+        if (confirm(winner_text + ' Play again?')) {
+          return this.new_game();
         } else {
           if (pause_audio()) {
             document.getElementById('a_quit').play();
-            return this.new_game();
+            socket.send({
+              action: 'quit',
+              game: sessionStorage.game
+            });
+            return this.quit();
           }
         }
       }
     }
   },
-  new_game: function() {
-    socket.send('play');
+  reset: function() {
     this.matrix = this.new_matrix();
     this.turns = 0;
-    $('#cols li').html('');
+    return $('#cols li').html('');
+  },
+  quit: function() {
+    var quit_timeout;
+    $('#pregame').show();
+    $('#playing').hide();
+    sessionStorage.clear();
+    this.reset();
+    return quit_timeout = window.setTimeout('bump_menu()', 2000);
+  },
+  new_game: function() {
+    this.reset();
     $('#pregame').hide();
     $('#playing').show();
-    playing = true;
     return this.new_turn();
   }
 };
@@ -224,13 +301,19 @@ ball = {
       'left': this.col * ball.w + 6,
       '-webkit-transform': 'translate3d(0px, ' + y + 'px, 0px)'
     });
+    if (board.my_turn()) {
+      socket.send({
+        drop: [ball.col],
+        game: sessionStorage.game
+      });
+    }
     return board.new_turn();
   }
 };
 log_acceleration = function(m) {
-  var a, a_changed, as, diffs, i, max_diff;
-  if (waiting) {
-    a = m.acceleration;
+  var a, a_changed, as, diffs, i, max_diff, no_show_timeout;
+  if ($('#connect').hasClass('visible')) {
+    a = m.accelerationIncludingGravity;
     as = [a.x, a.y, a.z];
     if (prev) {
       diffs = (function() {
@@ -244,48 +327,100 @@ log_acceleration = function(m) {
       max_diff = Math.max.apply(null, diffs);
       a_changed = Math.abs(parseInt(as[diffs.indexOf(max_diff)]));
       if (max_diff > 4 && a_changed < 2) {
-        alert('BUMP');
+        bump_menu('#connecting');
+        socket.send('play');
+        console.log(new Date().getTime());
+        no_show_timeout = window.setTimeout('no_show()', 5000);
       }
       $('#bumped').text(parseInt(max_diff));
     }
     return prev = as;
   }
 };
+test_bump = function() {
+  socket.send('play');
+  return true;
+};
 setup = function() {
-  var hide_address_bar, i;
+  var hide_address_bar, i, name_submit, set_my_name;
   $('body').bind('touchmove touchstart', function(e) {
     return e.preventDefault();
   });
   $(window).bind('keyup', function(e) {
-    switch (e.keyCode) {
-      case 32:
-        return board.place();
-      case 37:
-        return ball.move(-1);
-      case 39:
-        return ball.move(1);
+    if (board.my_turn()) {
+      switch (e.keyCode) {
+        case 32:
+          return board.place();
+        case 37:
+          return ball.move(-1);
+        case 39:
+          return ball.move(1);
+      }
     }
   });
   $('#cols').bind('touchmove touchend', function(e) {
-    switch (e.type) {
-      case 'touchmove':
-        e.preventDefault();
-        return board.highlight_col(e.targetTouches[0].pageX);
-      case 'touchend':
-        return board.place();
+    if (board.my_turn()) {
+      switch (e.type) {
+        case 'touchmove':
+          e.preventDefault();
+          return board.highlight_col(e.targetTouches[0].pageX);
+        case 'touchend':
+          return board.place();
+      }
     }
   });
-  $('#cols li').bind('touchstart', function(e) {
+  $('#cols li').bind('touchstart mouseover click', function(e) {
     var x;
-    e.preventDefault();
-    x = $(this).offset().left;
-    return board.highlight_col(x);
+    if (board.my_turn()) {
+      switch (e.type) {
+        case 'touchstart':
+          e.preventDefault();
+          x = $(this).offset().left;
+          return board.highlight_col(x);
+        case 'mouseover':
+          x = $(this).attr('id').split('c')[1] * ball.w;
+          return board.highlight_col(x, true);
+        case 'click':
+          return board.place();
+      }
+    }
   });
   $('#play_friend').bind('touchend click', function(e) {
-    return board.new_game();
+    return bump_menu('#connect');
   });
-  $('a').live('touchstart touchend', function(e) {
-    return $(this).toggleClass('highlight');
+  $('#close').bind('touchend click', function(e) {
+    return bump_menu();
+  });
+  $('#name_button').bind('touchend click', function(e) {
+    bump_menu('#edit_name');
+    if (localStorage.my_name) {
+      $('#your_name').attr('value', localStorage.my_name);
+    }
+    return document.getElementById('your_name').focus();
+  });
+  set_my_name = function(e) {
+    if (localStorage.my_name) {
+      return $('#my_name').text(localStorage.my_name);
+    }
+  };
+  set_my_name();
+  name_submit = function(e) {
+    var new_name;
+    e.preventDefault();
+    new_name = $('#your_name').attr('value').trim();
+    if (new_name) {
+      localStorage.my_name = new_name;
+      set_my_name();
+    }
+    bump_menu('#connect');
+    return document.getElementById('your_name').blur();
+  };
+  $('#new_name').bind('submit', name_submit);
+  $('a').live('touchstart touchend click', function(e) {
+    e.preventDefault();
+    if (e.type !== 'click') {
+      return $(this).toggleClass('highlight');
+    }
   });
   for (i = 0; i <= 5; i++) {
     document.getElementById('a' + i).load();

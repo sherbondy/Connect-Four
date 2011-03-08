@@ -20,5 +20,34 @@ ol#cols
 audio#a_quit(src:'/audio/sound_quit_button.mp3')
 audio#a_win(src:'/audio/sounds_youwin.mp3')
 
+div#bump
+  a#close(href:'#') x
+  h2#bump_logo Bump
+  div#connect
+    header
+      div#wifi
+      div#left_bump
+      div#right_bump
+      h3 Bump to connect
+
+    p Bump with another BumpFour player to start game.
+    span#my_name Player
+    a#name_button(href:'#') Edit name
+  div#edit_name
+    h3 Edit name
+    form#new_name
+      input#your_name(name:'your_name', type:'text', placeholder:'Enter name')
+  div#connecting
+    h3 Connecting...
+    p Please wait.
+    img#activity(src:'/img/activity.gif')
+  div#no_match
+    h3 No match found.
+    p Please try again.
+  div#opponent_quit
+    h3 The other player quit.
+
+div#overlay
+
 script(type:'text/javascript', src:'/script.js')
 
