@@ -1,0 +1,42 @@
+@-webkit-keyframes bumpLeft {
+  0% {
+    margin-left: -64px;
+  }
+  60% {
+    margin-left: -64px;
+  }
+  80% {
+    margin-left: -72px;
+  }
+  90% {
+    margin-left: -64px;
+  }
+  95% {
+    margin-left: -68px;
+  }
+  100% {
+    margin-left: -64px;
+  }
+}
+
+@-webkit-keyframes bumpRight {
+  0% {
+    margin-left: -32px;
+  }
+  60% {
+    margin-left: -32px;
+  }
+  80% {
+    margin-left: -26px;
+  }
+  90% {
+    margin-left: -32px;
+  }
+  95% {
+    margin-left: -28px;
+  }
+  100% {
+    margin-left: -32px;
+  }
+}
+  */
