@@ -87,28 +87,20 @@ body {
 #playing {
   display: none;
 }
-#black_text, #red_text {
-  position: absolute;
-  top: 16px;
-  width: 91px;
-  height: 48px;
+#status_text {
+  width: 200px;
+  text-align: center;
+  margin: 16px auto 0;
+  height: 32px;
   line-height: 1.5;
   font-weight: bold;
-  font-size: 14px;
-}
-#black_text {
-  left: 64px;
-}
-#red_text {
-  right: 64px;
-  text-align: right;
 }
 #cols {
   overflow: hidden;
   width: 315px;
   margin-top: 100px;
   margin-left: 3px;
-  height: 325px;
+  margin-bottom: 24px;
   background: url('img/bump4boardNew.png') no-repeat;
   z-index: 2;
 }
@@ -211,8 +203,9 @@ body {
 #my_name {
   display: block;
   font-size: 16px;
-  height: 48px;
+  padding: 8px 0;
   width: 160px;
+  white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
   float: left;
@@ -273,4 +266,22 @@ body {
   width: 32px;
   height: 32px;
   margin: 0 auto;
+}
+#end_game {
+  visiblity: hidden;
+  text-decoration: none;
+  display: block;
+  width: 110px;
+  margin: 0 auto;
+  padding: 8px;
+  font-size: 14px;
+  text-align: center;
+  border: 1px solid #825a2a;
+  -webkit-border-radius: 8px;
+  color: #fff;
+  text-transform: uppercase;
+  background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#683a03), to(#1d1403)), repeat-x;
+}
+#end_game:hover, #end_game.highlight {
+  background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#361e02), to(#000000)), repeat-x;
 }

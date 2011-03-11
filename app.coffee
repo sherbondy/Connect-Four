@@ -44,13 +44,6 @@ red.on 'error', (err)->
 
 # socket.io server
 
-pick_client = (client, message, p1, p2) ->
-    if client.sessionId is p1
-        io.clients[p2].send message
-    else if client.sessionId is p2
-        io.clients[p1].send message
-
-
 validate_clients = (p1, p2, func...) ->
     if io.clients[p2] and not io.clients[p1]
         console.log 'P1 disconnected'
@@ -61,8 +54,11 @@ validate_clients = (p1, p2, func...) ->
     else if io.clients[p1] and io.clients[p2]
         func
 
+# a list of players
+players = []
 io = io.listen app
 
+'''
 pair_up = ->
     red.scard 'waiting', (err, res)->
         if res >= 2
@@ -74,27 +70,63 @@ pair_up = ->
                     s_name = 'game:'+num+':'
                     red.mset s_name+'p1', p1, s_name+'p2', p2,
                       'client:'+p1+':game', num, 'client:'+p2+':game', num, (err, res)->
-                        io.clients[p1].send {game:num, player:1}
-                        io.clients[p2].send {game:num, player:2}
+                        name1 = players[p1].name
+                        name2 = players[p2].name
+
+                        players[p1].opponent = name2
+                        players[p2].opponent = name1
+
+                        io.clients[p1].send {game:num, player:1, opponent:name2}
+                        io.clients[p2].send {game:num, player:2, opponent:name1}
+'''
 
 io.on 'connection', (client)->
+    players[client.sessionId] = {opponent:null, name:null}
 
     client.on 'message', (message)->
         console.log message
-        if message is 'play'
-            red.sadd 'waiting', client.sessionId
+        if message and message.action is 'play'
+            players[client.sessionId].name = message.name
+            red.get 'waiting:'+message.time_stamp, (err, res)->
+                if not res
+                    red.set 'waiting:'+message.time_stamp, client.sessionId, (err,res)->
+                        red.expire 'waiting:'+message.time_stamp, 60
+                else
+                    p1 = res
+                    p2 = client.sessionId
+                    red.incr 'next.game.id', (err, num)->
+                        s_name = 'game:'+num+':'
+                        red.mset s_name+'p1', p1, s_name+'p2', p2,
+                          'client:'+p1+':game', num, 'client:'+p2+':game', num, (err, res)->
+                            name1 = players[p1].name
+                            name2 = players[p2].name
+
+                            players[p1].opponent = name2
+                            players[p2].opponent = name1
+
+                            io.clients[p1].send {game:num, player:1, opponent:name2}
+                            io.clients[p2].send {game:num, player:2, opponent:name1}
+
         else if message.game
             console.log 'game!'
             s_name = 'game:'+message.game+':'
             red.mget s_name+'p1', s_name+'p2', (err, replies)->
                 console.log replies
                 [p1, p2] = replies
+
+                pick_client = (client, message, p1, p2) ->
+                    if client.sessionId is p1
+                        io.clients[p2].send message
+                    else if client.sessionId is p2
+                        io.clients[p1].send message
+
                 validate_clients p1, p2, pick_client client, message, p1, p2
 
 
     client.on 'disconnect', ->
-        red.srem 'waiting', client.sessionId
         console.log client.sessionId
+        delete players[client.sessionId]
+
         red.get 'client:'+client.sessionId+':game', (err, res)->
             console.log res
             if res
@@ -104,4 +136,4 @@ io.on 'connection', (client)->
                     [p1, p2] = res
                     validate_clients p1, p2
 
-setInterval pair_up, 1000
+# setInterval pair_up, 1000

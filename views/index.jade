@@ -4,20 +4,23 @@ div#top
       img(src:'img/bump_to_play_a_friend.png')
 
   div#playing
+    p#status_text
     - var colors = ['black', 'red']
     - each color in colors
       img(id:color+'_arrow', src:'/img/bump4_arrow_'+color+'.png')
       div(id:color+'_move')
-      p(id:color+'_text')
 
 ol#cols
   - each num in [0,1,2,3,4,5,6]
     li(id:'c'+num)
 
+div#bottom
+  a#end_game(href:'#') End Game
+
 - each num in [0,1,2,3,4,5]
   audio(id:'a'+num, src:'/audio/sound_row'+num+'.mp3')
 
-audio#a_quit(src:'/audio/sound_quit_button.mp3')
+audio#a_quit(src:'/audio/sound_quit_game_button.mp3')
 audio#a_win(src:'/audio/sounds_youwin.mp3')
 
 div#bump
@@ -36,7 +39,7 @@ div#bump
   div#edit_name
     h3 Edit name
     form#new_name
-      input#your_name(name:'your_name', type:'text', placeholder:'Enter name')
+      input#your_name(name:'your_name', type:'text', placeholder:'Enter name', maxlength:'16')
   div#connecting
     h3 Connecting...
     p Please wait.
@@ -46,6 +49,8 @@ div#bump
     p Please try again.
   div#opponent_quit
     h3 The other player quit.
+  div#disconnected
+    h3 You have been disconnected. Try starting a new game.
 
 div#overlay
 

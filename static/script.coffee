@@ -1,5 +1,5 @@
-# previous acceleration value
-prev = 0
+# previous acceleration values
+prevs = []
 
 Array::real_len = ->
     if not this.length
@@ -8,6 +8,19 @@ Array::real_len = ->
         n = 0
         (n += 1 for i in [0..this.length-1] when this[i] isnt 0)
         n
+
+Array::max = ->
+    Math.max.apply(Math, this)
+
+Array::min = ->
+    Math.min.apply(Math, this)
+
+Array::sum = ->
+    sum = 0
+    sum += num for num in this
+    return sum
+Array::remove = (e) ->
+    @[t..t] = [] if (t = @.indexOf(e)) > -1
 
 String::trim = ->
     this.replace(/^\s+|\s+$/g,'')
@@ -18,6 +31,7 @@ pause_audio = ->
         true
 
 bump_menu = (div) ->
+    diffs = []
     $('#bump>div').removeClass 'visible'
     if div
         if not $('#bump').hasClass 'visible'
@@ -30,15 +44,17 @@ bump_menu = (div) ->
 
 opponent_quit = ->
     bump_menu('#opponent_quit')
-    board.quit()
+    board.quit(true)
 
 no_show = ->
     if not sessionStorage.game
       bump_menu '#no_match'
       connect_timeout = window.setTimeout "bump_menu('#connect')", 2000
 
+
+# Socket IO
+
 socket = new io.Socket null, {port:3000}
-socket.connect()
 
 socket.on 'connect', ->
     socket.send 'hey buddy!'
@@ -56,9 +72,16 @@ socket.on 'message', (obj)->
         bump_menu()
 
         sessionStorage.game = obj.game
+        if obj.opponent
+            sessionStorage.opponent = obj.opponent
+        else
+            sessionStorage.opponent = 'Your Opponent'
         if obj.player
             sessionStorage.player = obj.player
         board.new_game()
+socket.on 'disconnect', ->
+    bump_menu '#disconnected'
+    board.quit()
 
 board =
     # create a 7x6 matrix
@@ -128,9 +151,9 @@ board =
         $('#black_text, #red_text').text('')
 
         if player is color
-            $('#'+color+'_text').text('My turn.')
+            $('#status_text').text('My turn.')
         else
-            $('#'+color+'_text').text('Waiting...')
+            $('#status_text').text('Waiting for '+sessionStorage.opponent+'...')
         this.check_win()
 
     check_win: ->
@@ -187,28 +210,30 @@ board =
                     break
 
         if winner
-            if pause_audio()
-                winner_text = 'Your opponent won.'
-                if this.turn isnt parseInt(sessionStorage.player)
-                    winner_text = 'You win!'
-                document.getElementById('a_win').play()
-                if confirm winner_text+' Play again?'
-                    this.new_game()
-                else
-                    if pause_audio()
-                        document.getElementById('a_quit').play()
-                        socket.send {action:'quit', game:sessionStorage.game}
-                        this.quit()
+            this.win_dance()
 
+    win_dance: ->
+        if pause_audio()
+            winner_text = 'Sorry. '+sessionStorage.opponent+' won this round!'
+            if this.turn isnt parseInt(sessionStorage.player)
+                winner_text = 'Hooray! You win!'
+                document.getElementById('a_win').play()
+            if confirm winner_text+' Play again?'
+                this.new_game()
+            else
+                document.getElementById('a_quit').play()
+                socket.send {action:'quit', game:sessionStorage.game}
+                board.quit(true)
 
     reset: ->
         this.matrix = this.new_matrix()
         this.turns = 0
         $('#cols li').html('')
 
-    quit: ->
+    quit: (on_purpose=false) ->
         $('#pregame').show()
         $('#playing').hide()
+        $('#end_game').hide()
         sessionStorage.clear()
         this.reset()
         quit_timeout = window.setTimeout 'bump_menu()', 2000
@@ -217,6 +242,7 @@ board =
         this.reset()
         $('#pregame').hide()
         $('#playing').show()
+        $('#end_game').show()
 
         this.new_turn()
 
@@ -256,32 +282,40 @@ ball =
 log_acceleration = (m) ->
     if $('#connect').hasClass 'visible'
         a = m.accelerationIncludingGravity
-        as = [a.x,a.y,a.z]
+        m = parseInt(Math.sqrt(Math.pow(a.x, 2) + Math.pow(a.y, 2) + Math.pow(a.z, 2)))
 
-        if prev
-            # get the difference in acceleration values from last measure
-            diffs = (as[i]-prev[i] for i in [0..2])
-            # find which difference is largest
-            max_diff = Math.max.apply null, diffs
-            # isolate the current a (x, y, or z) value of greatest change
-            a_changed = Math.abs parseInt as[diffs.indexOf(max_diff)]
+        new_prevs = prevs.slice(0)
+        new_prevs.remove new_prevs.indexOf new_prevs.min()
 
-            if max_diff > 4 and a_changed < 2
-                bump_menu '#connecting'
-                socket.send 'play'
-                # if no match is found
-                console.log new Date().getTime()
-                no_show_timeout = window.setTimeout 'no_show()', 5000
+        diff = Math.abs((new_prevs.sum()/new_prevs.length) - prevs.min())
+        # $('#connect h3').text prevs.min() + ', ' + parseInt diff
+        # $('#connect p').text prevs.join ','
 
+        if parseInt(diff) >= 2
+            prevs = []
+            time_stamp = Math.round new Date().getTime() / 1000
 
-            $('#bumped').text parseInt max_diff
+            bump_menu '#connecting'
+            socket.send {action:'play', name:localStorage.my_name, time_stamp: time_stamp}
+
+            # if no match is found within 5 seconds.
+            no_show_timeout = window.setTimeout 'no_show()', 5000
 
         # save previous list of acceleration values
-        prev = as
+        if prevs.length > 5
+            prevs.shift()
+
+        prevs.push(m)
+
 
 test_bump = ->
-    socket.send 'play'
-    return true
+    socket.connect()
+    time_stamp = Math.round new Date().getTime() / 1000
+
+    bump_menu '#connecting'
+    socket.send {action:'play', name:localStorage.my_name, time_stamp: time_stamp}
+    no_show_timeout = window.setTimeout 'no_show()', 5000
+
 
 
 # initialize variables
@@ -293,7 +327,7 @@ setup = ->
     $(window).bind 'keyup', (e) ->
         if board.my_turn()
             switch e.keyCode
-                when 32 
+                when 32
                     board.place()
                 when 37 then ball.move(-1)
                 when 39 then ball.move(1)
@@ -321,6 +355,7 @@ setup = ->
                   board.place()
 
     $('#play_friend').bind 'touchend click', (e) ->
+        socket.connect()
         bump_menu('#connect')
 
     $('#close').bind 'touchend click', (e) ->
@@ -332,6 +367,9 @@ setup = ->
             $('#your_name').attr 'value', localStorage.my_name
         # autofocus is broken in mobile safari :(
         document.getElementById('your_name').focus()
+
+    $('#end_game').bind 'touchend click', (e) ->
+        socket.disconnect true
 
     set_my_name = (e) ->
         if localStorage.my_name
