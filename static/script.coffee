@@ -325,9 +325,9 @@ test_bump = ->
 geo =
     location: {latitude: null, longitude: null}
     success: (position) ->
-        console.log position
         geo.location.latitude = Math.round(position.coords.latitude)
         geo.location.longitude = Math.round(position.coords.longitude)
+        console.log geo.location
     error: (e) ->
         console.log 'Error obtaining geolocation: '+e
 
