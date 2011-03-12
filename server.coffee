@@ -39,7 +39,8 @@ app.get '/', (req, res)->
         locals: {hello: 'test'}
     }
 
-app.listen(3000)
+# duostack currently requires 9980 for websockets to work properly
+app.listen(9980)
 console.log "Express server listening on port %d", app.address().port
 
 

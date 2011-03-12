@@ -53,7 +53,7 @@ no_show = ->
 
 # Socket IO
 
-socket = new io.Socket null, {port:3000}
+socket = new io.Socket null, {port:9980}
 
 socket.on 'connect', ->
     socket.send 'hey buddy!'

@@ -73,7 +73,7 @@ no_show = function() {
   }
 };
 socket = new io.Socket(null, {
-  port: 3000
+  port: 9980
 });
 socket.on('connect', function() {
   return socket.send('hey buddy!');
