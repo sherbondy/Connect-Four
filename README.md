@@ -5,6 +5,9 @@ It uses websockets with help from socket.io.
 The whole app was written in CoffeeScript with the Express framework.
 Redis is used as our datastore.
 
+Make sure to make a file called secret.js with the following contents:
+    password='your_redis_password'
+
 ## Required Packages
 
 - [Express 2.0+](https://github.com/visionmedia/express)
