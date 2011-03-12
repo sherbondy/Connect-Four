@@ -51,23 +51,19 @@ pause_audio = function() {
   return _results;
 };
 bump_menu = function(div) {
-  var diffs;
-  diffs = [];
-  $('#bump>div').removeClass('visible');
+  $('#bump>div').hide();
   if (div) {
-    if (!$('#bump').hasClass('visible')) {
-      $('#bump').addClass('visible');
-      $('#overlay').addClass('visible');
-    }
-    return $(div).addClass('visible');
+    $('#bump').show();
+    $('#overlay').show();
+    return $(div).show();
   } else {
-    $('#bump').removeClass('visible');
-    return $('#overlay').removeClass('visible');
+    $('#bump').hide();
+    return $('#overlay').hide();
   }
 };
 opponent_quit = function() {
   bump_menu('#opponent_quit');
-  return board.quit(true);
+  return board.quit();
 };
 no_show = function() {
   var connect_timeout;
@@ -278,7 +274,7 @@ board = {
         if (sessionStorage.opponent) {
           return this.new_game();
         } else {
-          return this.quit();
+          return opponent_quit();
         }
       } else {
         document.getElementById('a_quit').play();
@@ -286,7 +282,7 @@ board = {
           action: 'quit',
           game: sessionStorage.game
         });
-        return board.quit(true);
+        return board.quit();
       }
     }
   },
@@ -295,11 +291,8 @@ board = {
     this.turns = 0;
     return $('#cols li').html('');
   },
-  quit: function(on_purpose) {
+  quit: function() {
     var quit_timeout;
-    if (on_purpose == null) {
-      on_purpose = false;
-    }
     $('#pregame').show();
     $('#playing').hide();
     $('#end_game').hide();

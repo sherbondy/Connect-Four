@@ -32,20 +32,18 @@ pause_audio = ->
         true
 
 bump_menu = (div) ->
-    diffs = []
-    $('#bump>div').removeClass 'visible'
+    $('#bump>div').hide()
     if div
-        if not $('#bump').hasClass 'visible'
-            $('#bump').addClass 'visible'
-            $('#overlay').addClass 'visible'
-        $(div).addClass 'visible'
+        $('#bump').show()
+        $('#overlay').show()
+        $(div).show()
     else
-        $('#bump').removeClass 'visible'
-        $('#overlay').removeClass 'visible'
+        $('#bump').hide()
+        $('#overlay').hide()
 
 opponent_quit = ->
     bump_menu('#opponent_quit')
-    board.quit(true)
+    board.quit()
 
 no_show = ->
     if not sessionStorage.game and $('#connecting').hasClass 'visible'
@@ -225,18 +223,18 @@ board =
                 if sessionStorage.opponent
                     this.new_game()
                 else
-                    this.quit()
+                    opponent_quit()
             else
                 document.getElementById('a_quit').play()
                 socket.send {action:'quit', game:sessionStorage.game}
-                board.quit(true)
+                board.quit()
 
     reset: ->
         this.matrix = this.new_matrix()
         this.turns = 0
         $('#cols li').html('')
 
-    quit: (on_purpose=false) ->
+    quit: ->
         $('#pregame').show()
         $('#playing').hide()
         $('#end_game').hide()

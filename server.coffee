@@ -3,6 +3,9 @@
 express = require 'express'
 io = require 'socket.io'
 redis = require 'redis'
+# make sure you make a module called secret.js
+# with the following contents: exports.password = 'your_redis_password'
+secret = require './secret.js'
 
 Array::remove = (e) ->
     @[t..t] = [] if (t = @.indexOf(e)) > -1
@@ -41,7 +44,11 @@ console.log "Express server listening on port %d", app.address().port
 
 # redis client
 
-red = redis.createClient()
+red = redis.createClient(9402, 'filefish.redistogo.com')
+
+red.auth secret.password, (status)->
+    console.log status
+
 red.on 'error', (err)->
     console.log 'Error '+err
 
@@ -57,7 +64,7 @@ validate_clients = (p1, p2, func...) ->
     else if io.clients[p1] and io.clients[p2]
         func
 
-# get the fake distance between two lat/long pairs
+# get the pseudo-distance between two lat/long pairs
 get_distance = (pos1, pos2) ->
     Math.sqrt(Math.pow((pos1.latitude-pos2.latitude), 2) +
               Math.pow((pos1.longitude-pos2.longitude), 2))
@@ -156,6 +163,10 @@ io.on 'connection', (client)->
                 red.mget 'game:'+res+':p1', 'game:'+res+':p2', (err, res)->
                     console.log res
                     [p1, p2] = res
+
+                    red.del 'game:'+res+':p1'
+                    red.del 'game:'+res+':p2'
+
                     validate_clients p1, p2
 
 # setInterval pair_up, 1000

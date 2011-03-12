@@ -120,8 +120,11 @@ body {
 #cols #c6 {
   border-radius: 0px 12px 12px 0px;
 }
-#bump {
+#bump, #bump > div, #overlay {
   display: none;
+  position: absolute;
+}
+#bump {
   position: absolute;
   z-index: 2;
   top: 14px;
@@ -133,9 +136,6 @@ body {
   border-color: #4c6997;
   -webkit-border-image: url('img/popup.png') 36 14 14 14 repeat repeat;
   line-height: 1.5;
-}
-#bump.visible {
-  display: block;
 }
 #bump header {
   height: 64px;
@@ -238,14 +238,10 @@ body {
   color: #000;
 }
 #bump > div {
-  display: none;
   width: 100%;
   clear: both;
   height: 200px;
   position: absolute;
-}
-#bump > div.visible {
-  display: block;
 }
 #overlay {
   width: 100%;
@@ -256,10 +252,6 @@ body {
   left: 0;
   background-color: rgba(255, 255, 255, 0.5);
   z-index: 1;
-  display: none;
-}
-#overlay.visible {
-  display: block;
 }
 #activity {
   display: block;
@@ -276,9 +268,9 @@ body {
   font-size: 14px;
   text-align: center;
   border: 1px solid #825a2a;
-  -webkit-border-radius: 8px;
   color: #fff;
   text-transform: uppercase;
+  -webkit-border-radius: 8px;
   background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#683a03), to(#1d1403)), repeat-x;
 }
 #end_game:hover, #end_game.highlight {

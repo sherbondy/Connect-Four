@@ -130,8 +130,12 @@ body {
     }
 }
 
-#bump {
+#bump, #bump>div, #overlay {
     display: none;
+    position: absolute;
+}
+
+#bump {
     position: absolute;
     z-index: 2;
     top: 14px;
@@ -144,174 +148,163 @@ body {
     -webkit-border-image: url('img/popup.png') 36 14 14 14 repeat repeat;
     line-height: 1.5;
 
-    &.visible {
-      display: block;
-    }
-
     header {
-      height: 64px;
-      margin-bottom: 16px;
+        height: 64px;
+        margin-bottom: 16px;
     }
     h3 {
-      font-size: 18px;
-      padding: 24px 0px;
+        font-size: 18px;
+        padding: 24px 0px;
     }
     p {
-      background: rgba(255,255,255,0.75);
-      border-radius: 8px;
-      margin-bottom: 16px;
-      padding: 8px;
-      line-height: 1.5;
+        background: rgba(255,255,255,0.75);
+        border-radius: 8px;
+        margin-bottom: 16px;
+        padding: 8px;
+        line-height: 1.5;
     }
 }
 #bump_logo {
-  text-indent: -9999px;
-  width: 80px;
-  height: 24px;
-  background: url('img/bump_white.png') no-repeat;
-  background-size: 100%;
-  margin: -30px auto 8px;
+    text-indent: -9999px;
+    width: 80px;
+    height: 24px;
+    background: url('img/bump_white.png') no-repeat;
+    background-size: 100%;
+    margin: -30px auto 8px;
 }
 #close {
-  display: block;
-  float: right;
-  font-weight: bold;
-  text-decoration: none;
-  font-size: 18px;
-  margin: -40px -12px 0 0;
-  padding: 8px;
-  color: #4a4b4d;
-  &:hover, &.highlight {
-    opacity: 0.5;
-  }
+    display: block;
+    float: right;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 18px;
+    margin: -40px -12px 0 0;
+    padding: 8px;
+    color: #4a4b4d;
+    &:hover, &.highlight {
+        opacity: 0.5;
+    }
 }
 
 #connect h3 {
-  margin-left: 72px;
-  text-align: center;
+    margin-left: 72px;
+    text-align: center;
 }
 #wifi, #left_bump, #right_bump {
-  float: left;
-  background-size: 100%;
+    float: left;
+    background-size: 100%;
 }
 #wifi {
-  background: url('img/bump_signal.png');
-  width: 64px;
-  height: 24px;
+    background: url('img/bump_signal.png');
+    width: 64px;
+    height: 24px;
 }
 #left_bump, #right_bump {
-  width: 32px;
-  height: 64px;
-  background: url('img/bump_hand.png');
+    width: 32px;
+    height: 64px;
+    background: url('img/bump_hand.png');
 }
 #left_bump {
-  margin-left: -64px;
-  -webkit-animation: bumpLeft 2s infinite;
+    margin-left: -64px;
+    -webkit-animation: bumpLeft 2s infinite;
 }
 #right_bump {
-  margin-left: -32px;
-  -webkit-transform: rotateY(180deg);
-  -webkit-animation: bumpRight 2s infinite;
+    margin-left: -32px;
+    -webkit-transform: rotateY(180deg);
+    -webkit-animation: bumpRight 2s infinite;
 }
 #my_name {
-  display: block;
-  font-size: 16px;
-  padding: 8px 0;
-  width: 160px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  float: left;
-  font-weight: bold;
-  margin: 0 8px;
+    display: block;
+    font-size: 16px;
+    padding: 8px 0;
+    width: 160px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    float: left;
+    font-weight: bold;
+    margin: 0 8px;
 }
 #name_button {
-  float: right;
-  background: -webkit-gradient(linear, 0% 0%, 0% 100%,
-    from(#a7b4c4),
-    color-stop(0.5, #7790ae),
-    color-stop(0.5, #6d86a8),
-    to(#6b84a7)), repeat-x;
-  background-size: 100%;
-  border: 1px solid #526078;
-  border-radius: 8px;
-  color: #fff;
-  text-decoration: none;
-  padding: 8px;
-  text-shadow: 0px 1px 0px #000;
-  font-size: 14px;
-  &:hover, &.highlight {
+    float: right;
     background: -webkit-gradient(linear, 0% 0%, 0% 100%,
-    from(darken(#a7b4c4, 20%)),
-    color-stop(0.5, darken(#7790ae, 20%)),
-    color-stop(0.5, darken(#6d86a8, 20%)),
-    to(darken(#6b84a7, 20%))), repeat-x;
+      from(#a7b4c4),
+      color-stop(0.5, #7790ae),
+      color-stop(0.5, #6d86a8),
+      to(#6b84a7)), repeat-x;
+    background-size: 100%;
+    border: 1px solid #526078;
+    border-radius: 8px;
+    color: #fff;
+    text-decoration: none;
+    padding: 8px;
+    text-shadow: 0px 1px 0px #000;
+    font-size: 14px;
 
-  }
+    &:hover, &.highlight {
+        background: -webkit-gradient(linear, 0% 0%, 0% 100%,
+          from(darken(#a7b4c4, 20%)),
+          color-stop(0.5, darken(#7790ae, 20%)),
+          color-stop(0.5, darken(#6d86a8, 20%)),
+          to(darken(#6b84a7, 20%))), repeat-x;
+    }
 }
 
 #your_name {
-  display: block;
-  -webkit-border-radius: 8px;
-  width: 200px;
-  padding: 4px 8px;
-  margin: 0 auto;
-  border: none;
-  outline: none;
-  color: #000;
+    display: block;
+    -webkit-border-radius: 8px;
+    width: 200px;
+    padding: 4px 8px;
+    margin: 0 auto;
+    border: none;
+    outline: none;
+    color: #000;
 }
 
 #bump>div {
-  display: none;
-  width: 100%;
-  clear: both;
-  height: 200px;
-  position: absolute;
-  &.visible {
-    display: block;
-  }
+    width: 100%;
+    clear: both;
+    height: 200px;
+    position: absolute;
 }
 
 #overlay {
-  width: 100%;
-  height: 100%;
-  min-height: 480px;
-  position: absolute;
-  top: 0;
-  left: 0;
-  background-color: rgba(255,255,255,0.5);
-  z-index: 1;
-  display: none;
-  &.visible {
-    display: block;
-  }
+    width: 100%;
+    height: 100%;
+    min-height: 480px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: rgba(255,255,255,0.5);
+    z-index: 1;
 }
 
 #activity {
-  display: block;
-  width: 32px;
-  height: 32px;
-  margin: 0 auto;
+    display: block;
+    width: 32px;
+    height: 32px;
+    margin: 0 auto;
 }
 
 #end_game {
-  text-decoration: none;
-  display: none;
-  width: 110px;
-  margin: 0 auto;
-  padding: 8px;
-  font-size: 14px;
-  text-align: center;
-  border: 1px solid #825a2a;
-  -webkit-border-radius: 8px;
-  color: #fff;
-  text-transform: uppercase;
-  background: -webkit-gradient(linear, 0% 0%, 0% 100%,
-    from(#683a03),
-    to(#1d1403)), repeat-x;
-  &:hover, &.highlight {
+    text-decoration: none;
+    display: none;
+    width: 110px;
+    margin: 0 auto;
+    padding: 8px;
+    font-size: 14px;
+    text-align: center;
+    border: 1px solid #825a2a;
+    color: #fff;
+    text-transform: uppercase;
+    -webkit-border-radius: 8px;
     background: -webkit-gradient(linear, 0% 0%, 0% 100%,
-    from(darken(#683a03, 10%)),
-    to(darken(#1d1403, 10%))), repeat-x;
-  }
+      from(#683a03),
+      to(#1d1403)), repeat-x;
+
+    &:hover, &.highlight {
+        background: -webkit-gradient(linear, 0% 0%, 0% 100%,
+        from(darken(#683a03, 10%)),
+        to(darken(#1d1403, 10%))), repeat-x;
+    }
 }
