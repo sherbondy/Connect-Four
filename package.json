@@ -1,0 +1,24 @@
+{
+  "name": "webbump4",
+  "description": "A browser-based clone of BumpFour.",
+  "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/sherbondy/Connect-Four.git"
+  },
+  "author": "Ethan Sherbondy <ethanis@mit.edu> (http://www.tooepic.com)",
+  "main": "server.js",
+  "directories": {
+    "lib": "./node_modules"
+  },
+  "engines": {
+    "node": ">= 0.4"
+  },
+  "dependencies": {
+    "express": ">= 2.0.0beta3",
+    "connect": ">= 1.0.1 < 2.0.0",
+    "redis": ">= 0.5.0 < 0.6.0",
+    "jade": ">= 0.8.0",
+    "socket.io": ">= 0.6.0"
+  }
+}

@@ -124,6 +124,9 @@ body {
   display: none;
   position: absolute;
 }
+#bump.visible, #bump > div.visible, #overlay.visible {
+  display: block;
+}
 #bump {
   position: absolute;
   z-index: 2;
