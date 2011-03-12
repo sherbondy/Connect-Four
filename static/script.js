@@ -1,5 +1,6 @@
-var ball, board, bump_menu, log_acceleration, no_show, opponent_quit, pause_audio, prevs, setup, socket, test_bump;
+var ball, board, bump_menu, geo, jerks, log_acceleration, no_show, opponent_quit, pause_audio, prevs, setup, socket, test_bump;
 prevs = [];
+jerks = [];
 Array.prototype.real_len = function() {
   var i, n, _ref;
   if (!this.length) {
@@ -70,7 +71,7 @@ opponent_quit = function() {
 };
 no_show = function() {
   var connect_timeout;
-  if (!sessionStorage.game) {
+  if (!sessionStorage.game && $('#connecting').hasClass('visible')) {
     bump_menu('#no_match');
     return connect_timeout = window.setTimeout("bump_menu('#connect')", 2000);
   }
@@ -274,7 +275,11 @@ board = {
         document.getElementById('a_win').play();
       }
       if (confirm(winner_text + ' Play again?')) {
-        return this.new_game();
+        if (sessionStorage.opponent) {
+          return this.new_game();
+        } else {
+          return this.quit();
+        }
       } else {
         document.getElementById('a_quit').play();
         socket.send({
@@ -349,41 +354,59 @@ ball = {
   }
 };
 log_acceleration = function(m) {
-  var a, diff, new_prevs, no_show_timeout, time_stamp;
+  var a, max, no_show_timeout, sum;
   if ($('#connect').hasClass('visible')) {
     a = m.accelerationIncludingGravity;
     m = parseInt(Math.sqrt(Math.pow(a.x, 2) + Math.pow(a.y, 2) + Math.pow(a.z, 2)));
-    new_prevs = prevs.slice(0);
-    new_prevs.remove(new_prevs.indexOf(new_prevs.min()));
-    diff = Math.abs((new_prevs.sum() / new_prevs.length) - prevs.min());
-    if (parseInt(diff) >= 2) {
+    if (prevs) {
+      jerks.push(m - prevs[prevs.length - 1]);
+    }
+    if (jerks.length > 10) {
+      jerks.shift();
+    }
+    max = jerks.max();
+    sum = jerks.sum();
+    if (max >= 2 && Math.abs(sum) < 2) {
       prevs = [];
-      time_stamp = Math.round(new Date().getTime() / 1000);
+      jerks = [];
       bump_menu('#connecting');
       socket.send({
         action: 'play',
         name: localStorage.my_name,
-        time_stamp: time_stamp
+        location: geo.location
       });
       no_show_timeout = window.setTimeout('no_show()', 5000);
     }
-    if (prevs.length > 5) {
+    if (prevs.length > 10) {
       prevs.shift();
     }
     return prevs.push(m);
   }
 };
 test_bump = function() {
-  var no_show_timeout, time_stamp;
+  var no_show_timeout;
   socket.connect();
-  time_stamp = Math.round(new Date().getTime() / 1000);
   bump_menu('#connecting');
   socket.send({
     action: 'play',
     name: localStorage.my_name,
-    time_stamp: time_stamp
+    location: geo.location
   });
   return no_show_timeout = window.setTimeout('no_show()', 5000);
+};
+geo = {
+  location: {
+    latitude: null,
+    longitude: null
+  },
+  success: function(position) {
+    console.log(position);
+    geo.location.latitude = Math.round(position.coords.latitude);
+    return geo.location.longitude = Math.round(position.coords.longitude);
+  },
+  error: function(e) {
+    return console.log('Error obtaining geolocation: ' + e);
+  }
 };
 setup = function() {
   var hide_address_bar, i, name_submit, set_my_name;
@@ -444,7 +467,7 @@ setup = function() {
     return document.getElementById('your_name').focus();
   });
   $('#end_game').bind('touchend click', function(e) {
-    return socket.disconnect(true);
+    return socket.disconnect();
   });
   set_my_name = function(e) {
     if (localStorage.my_name) {
@@ -481,6 +504,9 @@ setup = function() {
   };
   hide_address_bar();
   setInterval(hide_address_bar, 2000);
-  return window.addEventListener('devicemotion', log_acceleration, false);
+  window.addEventListener('devicemotion', log_acceleration, false);
+  return navigator.geolocation.getCurrentPosition(geo.success, geo.error, {
+    maximumAge: 600000
+  });
 };
 $(document).ready(setup);

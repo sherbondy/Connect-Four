@@ -1,5 +1,6 @@
 # previous acceleration values
 prevs = []
+jerks = []
 
 Array::real_len = ->
     if not this.length
@@ -47,7 +48,7 @@ opponent_quit = ->
     board.quit(true)
 
 no_show = ->
-    if not sessionStorage.game
+    if not sessionStorage.game and $('#connecting').hasClass 'visible'
       bump_menu '#no_match'
       connect_timeout = window.setTimeout "bump_menu('#connect')", 2000
 
@@ -219,7 +220,12 @@ board =
                 winner_text = 'Hooray! You win!'
                 document.getElementById('a_win').play()
             if confirm winner_text+' Play again?'
-                this.new_game()
+                # if the opponent object is no longer set, they quit
+                # but the confirm blocked the quit funciton
+                if sessionStorage.opponent
+                    this.new_game()
+                else
+                    this.quit()
             else
                 document.getElementById('a_quit').play()
                 socket.send {action:'quit', game:sessionStorage.game}
@@ -284,25 +290,28 @@ log_acceleration = (m) ->
         a = m.accelerationIncludingGravity
         m = parseInt(Math.sqrt(Math.pow(a.x, 2) + Math.pow(a.y, 2) + Math.pow(a.z, 2)))
 
-        new_prevs = prevs.slice(0)
-        new_prevs.remove new_prevs.indexOf new_prevs.min()
+        if prevs
+            jerks.push(m-prevs[prevs.length-1])
+        if jerks.length > 10
+            jerks.shift()
 
-        diff = Math.abs((new_prevs.sum()/new_prevs.length) - prevs.min())
-        # $('#connect h3').text prevs.min() + ', ' + parseInt diff
-        # $('#connect p').text prevs.join ','
+        max = jerks.max()
+        sum = jerks.sum()
 
-        if parseInt(diff) >= 2
+        if max >= 2 and Math.abs(sum) < 2
             prevs = []
-            time_stamp = Math.round new Date().getTime() / 1000
+            jerks = []
+
 
             bump_menu '#connecting'
-            socket.send {action:'play', name:localStorage.my_name, time_stamp: time_stamp}
+            socket.send {action:'play', name:localStorage.my_name, location:geo.location}
 
             # if no match is found within 5 seconds.
             no_show_timeout = window.setTimeout 'no_show()', 5000
 
+
         # save previous list of acceleration values
-        if prevs.length > 5
+        if prevs.length > 10
             prevs.shift()
 
         prevs.push(m)
@@ -310,11 +319,19 @@ log_acceleration = (m) ->
 
 test_bump = ->
     socket.connect()
-    time_stamp = Math.round new Date().getTime() / 1000
 
     bump_menu '#connecting'
-    socket.send {action:'play', name:localStorage.my_name, time_stamp: time_stamp}
+    socket.send {action:'play', name:localStorage.my_name, location:geo.location}
     no_show_timeout = window.setTimeout 'no_show()', 5000
+
+geo =
+    location: {latitude: null, longitude: null}
+    success: (position) ->
+        console.log position
+        geo.location.latitude = Math.round(position.coords.latitude)
+        geo.location.longitude = Math.round(position.coords.longitude)
+    error: (e) ->
+        console.log 'Error obtaining geolocation: '+e
 
 
 
@@ -369,7 +386,7 @@ setup = ->
         document.getElementById('your_name').focus()
 
     $('#end_game').bind 'touchend click', (e) ->
-        socket.disconnect true
+        socket.disconnect()
 
     set_my_name = (e) ->
         if localStorage.my_name
@@ -411,6 +428,10 @@ setup = ->
     window.addEventListener 'devicemotion',
                             log_acceleration,
                             false
+
+    navigator.geolocation.getCurrentPosition(geo.success,
+                                             geo.error,
+                                             {maximumAge:600000})
 
 
 $(document).ready setup

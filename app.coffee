@@ -4,6 +4,9 @@ express = require 'express'
 io = require 'socket.io'
 redis = require 'redis'
 
+Array::remove = (e) ->
+    @[t..t] = [] if (t = @.indexOf(e)) > -1
+
 static = __dirname + '/static'
 
 app = express.createServer(
@@ -54,58 +57,75 @@ validate_clients = (p1, p2, func...) ->
     else if io.clients[p1] and io.clients[p2]
         func
 
+# get the fake distance between two lat/long pairs
+get_distance = (pos1, pos2) ->
+    Math.sqrt(Math.pow((pos1.latitude-pos2.latitude), 2) +
+              Math.pow((pos1.longitude-pos2.longitude), 2))
+
 # a list of players
 players = []
 io = io.listen app
 
-'''
-pair_up = ->
-    red.scard 'waiting', (err, res)->
-        if res >= 2
-            red.multi().spop('waiting').spop('waiting').exec (err, replies)->
-                console.log replies
-                # players 1 and 2
-                [p1, p2] = replies
-                validate_clients p1, p2, red.incr 'next.game.id', (err, num)->
-                    s_name = 'game:'+num+':'
-                    red.mset s_name+'p1', p1, s_name+'p2', p2,
-                      'client:'+p1+':game', num, 'client:'+p2+':game', num, (err, res)->
-                        name1 = players[p1].name
-                        name2 = players[p2].name
+pair_up = (p1, p2)->
+    red.incr 'next.game.id', (err, num)->
+        s_name = 'game:'+num+':'
+        red.mset s_name+'p1', p1, s_name+'p2', p2,
+          'client:'+p1+':game', num, 'client:'+p2+':game', num, (err, res)->
+            name1 = players[p1].name
+            name2 = players[p2].name
 
-                        players[p1].opponent = name2
-                        players[p2].opponent = name1
+            players[p1].opponent = name2
+            players[p2].opponent = name1
 
-                        io.clients[p1].send {game:num, player:1, opponent:name2}
-                        io.clients[p2].send {game:num, player:2, opponent:name1}
-'''
+            io.clients[p1].send {game:num, player:1, opponent:name2}
+            io.clients[p2].send {game:num, player:2, opponent:name1}
+
 
 io.on 'connection', (client)->
-    players[client.sessionId] = {opponent:null, name:null}
+    players[client.sessionId] = {opponent:null, name:null, location:null, time_stamp:null}
 
     client.on 'message', (message)->
         console.log message
         if message and message.action is 'play'
-            players[client.sessionId].name = message.name
-            red.get 'waiting:'+message.time_stamp, (err, res)->
+            p1 = client.sessionId
+
+            player = players[client.sessionId]
+            player.name = message.name
+            player.location = message.location
+            player.time_stamp = Math.round(new Date().getTime() / 1000)
+
+            console.log player.time_stamp
+
+            red.hget 'waiting', player.time_stamp, (err, res)->
                 if not res
-                    red.set 'waiting:'+message.time_stamp, client.sessionId, (err,res)->
-                        red.expire 'waiting:'+message.time_stamp, 60
+                    red.hgetall 'waiting', (err, waiting)->
+                        # a range of acceptable timestamps to search
+                        acceptable = [(player.time_stamp-2)..(player.time_stamp + 2)]
+                        # if we find a match, set this to true
+                        found = false
+
+                        for ts in acceptable
+                            p2 = waiting[ts]
+
+                            if p2
+                                console.log p2
+                                loc =  players[p2].location
+
+                                if loc and get_distance(loc, player.location) < 2
+                                    found = true
+                                    pair_up(p1, p2)
+
+                        # if we exit the loop without finding matches, add the player to redis
+                        if not found
+                            # don't want to overwrite a value if it was populated while we were checking
+                            red.hsetnx 'waiting', player.time_stamp, client.sessionId
                 else
-                    p1 = res
-                    p2 = client.sessionId
-                    red.incr 'next.game.id', (err, num)->
-                        s_name = 'game:'+num+':'
-                        red.mset s_name+'p1', p1, s_name+'p2', p2,
-                          'client:'+p1+':game', num, 'client:'+p2+':game', num, (err, res)->
-                            name1 = players[p1].name
-                            name2 = players[p2].name
+                    p2 = res
 
-                            players[p1].opponent = name2
-                            players[p2].opponent = name1
+                    # delete from waiting since we found a match
+                    red.hdel 'waiting', player.time_stamp
 
-                            io.clients[p1].send {game:num, player:1, opponent:name2}
-                            io.clients[p2].send {game:num, player:2, opponent:name1}
+                    pair_up(p1, p2)
 
         else if message.game
             console.log 'game!'
@@ -125,7 +145,9 @@ io.on 'connection', (client)->
 
     client.on 'disconnect', ->
         console.log client.sessionId
-        delete players[client.sessionId]
+        players.remove players.indexOf client.sessionId
+
+        red.hdel 'waiting', players[client.sessionId].time_stamp
 
         red.get 'client:'+client.sessionId+':game', (err, res)->
             console.log res
