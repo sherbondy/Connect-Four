@@ -51,14 +51,14 @@ pause_audio = function() {
   return _results;
 };
 bump_menu = function(div) {
-  $('#bump>div').hide();
+  $('#bump>div').removeClass('visible');
   if (div) {
-    $('#bump').show();
-    $('#overlay').show();
-    return $(div).show();
+    $('#bump').addClass('visible');
+    $('#overlay').addClass('visible');
+    return $(div).addClass('visible');
   } else {
-    $('#bump').hide();
-    return $('#overlay').hide();
+    $('#bump').removeClass('visible');
+    return $('#overlay').removeClass('visible');
   }
 };
 opponent_quit = function() {

@@ -32,14 +32,14 @@ pause_audio = ->
         true
 
 bump_menu = (div) ->
-    $('#bump>div').hide()
+    $('#bump>div').removeClass 'visible'
     if div
-        $('#bump').show()
-        $('#overlay').show()
-        $(div).show()
+        $('#bump').addClass 'visible'
+        $('#overlay').addClass 'visible'
+        $(div).addClass 'visible'
     else
-        $('#bump').hide()
-        $('#overlay').hide()
+        $('#bump').removeClass 'visible'
+        $('#overlay').removeClass 'visible'
 
 opponent_quit = ->
     bump_menu('#opponent_quit')
