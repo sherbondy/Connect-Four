@@ -1,5 +1,6 @@
 var app, express, get_distance, io, pair_up, players, red, redis, secret, static, validate_clients;
 var __slice = Array.prototype.slice;
+require.paths.unshift(__dirname);
 express = require('express');
 io = require('socket.io');
 redis = require('redis');
