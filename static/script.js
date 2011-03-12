@@ -393,9 +393,9 @@ geo = {
     longitude: null
   },
   success: function(position) {
-    console.log(position);
     geo.location.latitude = Math.round(position.coords.latitude);
-    return geo.location.longitude = Math.round(position.coords.longitude);
+    geo.location.longitude = Math.round(position.coords.longitude);
+    return console.log(geo.location);
   },
   error: function(e) {
     return console.log('Error obtaining geolocation: ' + e);
