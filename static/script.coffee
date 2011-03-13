@@ -20,6 +20,7 @@ Array::sum = ->
     sum = 0
     sum += num for num in this
     return sum
+
 Array::remove = (e) ->
     @[t..t] = [] if (t = @.indexOf(e)) > -1
 
@@ -57,6 +58,7 @@ socket = new io.Socket null, {port:9980}
 
 socket.on 'connect', ->
     socket.send 'hey buddy!'
+
 socket.on 'message', (obj)->
     console.log obj
     if obj.no_match
@@ -78,9 +80,12 @@ socket.on 'message', (obj)->
         if obj.player
             sessionStorage.player = obj.player
         board.new_game()
+
 socket.on 'disconnect', ->
     bump_menu '#disconnected'
     board.quit()
+
+# The meat of the app
 
 board =
     # create a 7x6 matrix
@@ -252,7 +257,9 @@ board =
 
 
 ball =
+    # the default column of the ball
     col: 3
+    # the width of the ball in pixels
     w: 45
 
     move: (cols) ->
