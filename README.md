@@ -5,6 +5,8 @@ It uses websockets with help from socket.io.
 The whole app was written in CoffeeScript with the Express framework.
 Redis is used as our datastore.
 
+Try it out here: http://webbump4.duostack.net
+
 Make sure to make a file called secret.js with the following contents:
     password='your_redis_password'
 

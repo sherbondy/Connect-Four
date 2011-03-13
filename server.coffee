@@ -74,6 +74,7 @@ players = []
 io = io.listen app
 
 pair_up = (p1, p2)->
+    # frankly, game IDs should be unique hash strings
     red.incr 'next.game.id', (err, num)->
         s_name = 'game:'+num+':'
         red.mset s_name+'p1', p1, s_name+'p2', p2,
@@ -168,5 +169,3 @@ io.on 'connection', (client)->
                     red.del 'game:'+res+':p2'
 
                     validate_clients p1, p2
-
-# setInterval pair_up, 1000
